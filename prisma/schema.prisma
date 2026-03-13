@@ -1,0 +1,116 @@
+// =============================================================================
+// LegitBites Cashflow Management — Prisma Schema
+// =============================================================================
+// Defines the core data model for the cashflow management application.
+// Uses PostgreSQL (via Supabase) as the underlying database.
+//
+// RBAC Strategy:
+// - `Role` enum with two values: OWNER and STAFF
+// - OWNER: Full access — reports, master data, and transaction management
+// - STAFF: Limited access — can only create daily transactions
+//
+// The `User.id` field is a UUID that maps 1:1 with the Supabase Auth user ID,
+// allowing us to sync authentication state with our application data.
+// =============================================================================
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+// Connection URLs are configured in prisma.config.ts (Prisma 7+).
+// Only the provider is declared here.
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+/// Role-Based Access Control — determines what a user can do in the app.
+/// OWNER: Full access (reports, master data, categories, all transactions).
+/// STAFF: Restricted to recording daily cash-in / cash-out transactions.
+enum Role {
+  OWNER
+  STAFF
+}
+
+/// Transaction type — classifies a financial record as money coming in or out.
+/// INCOME: Revenue / cash-in (e.g., daily food sales).
+/// EXPENSE: Cost / cash-out (e.g., raw material purchase).
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+// ---------------------------------------------------------------------------
+// Models
+// ---------------------------------------------------------------------------
+
+/// Represents an application user, linked to a Supabase Auth account.
+/// The `id` field is a UUID that MUST match the Supabase Auth user's `id`
+/// so we can look up app-level data from the authenticated session.
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String   @unique
+  name      String
+  role      Role     @default(STAFF)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // --- Relations ---
+  transactions Transaction[]
+
+  @@map("users")
+}
+
+/// Master data for income/expense categories.
+/// Examples: "Penjualan Harian", "Bahan Baku", "Gaji Karyawan", "Listrik & Air".
+/// Only OWNER can create, edit, or delete categories through the UI.
+model Category {
+  id        String          @id @default(uuid()) @db.Uuid
+  name      String          @unique
+  type      TransactionType
+  createdAt DateTime        @default(now()) @map("created_at")
+  updatedAt DateTime        @updatedAt @map("updated_at")
+
+  // --- Relations ---
+  transactions Transaction[]
+
+  @@map("categories")
+}
+
+/// A single cashflow transaction (income or expense).
+/// Each transaction is recorded by a user (STAFF or OWNER) and categorized.
+///
+/// Key design decisions:
+/// - `amount` uses `Decimal` for precise financial calculations (avoids
+///   floating-point rounding errors that plague standard Float/Double types).
+/// - `date` is the business date of the transaction, which may differ from
+///   `createdAt` (the timestamp when the record was actually created).
+/// - `description` is optional, allowing quick entry without friction.
+model Transaction {
+  id          String          @id @default(uuid()) @db.Uuid
+  amount      Decimal         @db.Decimal(15, 2)
+  type        TransactionType
+  date        DateTime        @db.Date
+  description String?
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  // --- Relations ---
+  /// The category this transaction belongs to.
+  categoryId String   @map("category_id") @db.Uuid
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  /// The user who recorded this transaction.
+  userId String @map("user_id") @db.Uuid
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([date])
+  @@index([type])
+  @@index([categoryId])
+  @@index([userId])
+  @@map("transactions")
+}
