@@ -1,0 +1,168 @@
+// =============================================================================
+// Dashboard Sidebar Component
+// =============================================================================
+// Navigation sidebar with role-based menu items.
+// OWNER sees all links; STAFF sees only transaction-related links.
+// Uses Shadcn Sidebar component with responsive mobile support.
+// =============================================================================
+
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  LayoutDashboard,
+  ArrowRightLeft,
+  PlusCircle,
+  FolderOpen,
+  LogOut,
+} from "lucide-react";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from "@/components/ui/sidebar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { logout } from "@/app/login/actions";
+
+type NavItem = {
+  title: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  ownerOnly?: boolean;
+};
+
+// Navigation menu items — items with `ownerOnly: true` are hidden for STAFF
+const NAV_ITEMS: NavItem[] = [
+  {
+    title: "Dashboard",
+    href: "/",
+    icon: LayoutDashboard,
+  },
+  {
+    title: "Catat Transaksi",
+    href: "/transactions/new",
+    icon: PlusCircle,
+  },
+  {
+    title: "Riwayat Transaksi",
+    href: "/transactions",
+    icon: ArrowRightLeft,
+  },
+  {
+    title: "Kategori",
+    href: "/categories",
+    icon: FolderOpen,
+    ownerOnly: true,
+  },
+];
+
+interface AppSidebarProps {
+  user: {
+    name: string;
+    email: string;
+    role: "OWNER" | "STAFF";
+  };
+}
+
+export function AppSidebar({ user }: AppSidebarProps) {
+  const pathname = usePathname();
+
+  // Filter nav items based on user role
+  const visibleItems = NAV_ITEMS.filter(
+    (item) => !item.ownerOnly || user.role === "OWNER"
+  );
+
+  // Get initials from user name for avatar
+  const initials = user.name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
+  return (
+    <Sidebar>
+      {/* --- Sidebar Header: Brand --- */}
+      <SidebarHeader className="p-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-linear-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-md">
+            <span className="text-xl">🍽️</span>
+          </div>
+          <div>
+            <h1 className="font-bold text-lg leading-tight">LegitBites</h1>
+            <p className="text-xs text-muted-foreground">Cashflow Management</p>
+          </div>
+        </div>
+      </SidebarHeader>
+
+      <Separator />
+
+      {/* --- Sidebar Content: Navigation --- */}
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Menu</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {visibleItems.map((item) => {
+                const isActive =
+                  pathname === item.href ||
+                  (item.href !== "/" && pathname.startsWith(item.href));
+
+                return (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      render={<Link href={item.href} />}
+                      isActive={isActive}
+                      className="h-12 text-base"
+                    >
+                      <item.icon className="w-5 h-5" />
+                      <span className="font-medium">{item.title}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      {/* --- Sidebar Footer: User Info + Logout --- */}
+      <SidebarFooter className="p-4">
+        <Separator className="mb-4" />
+        <div className="flex items-center gap-3 mb-3">
+          <Avatar className="h-10 w-10">
+            <AvatarFallback className="bg-emerald-100 text-emerald-700 font-semibold">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold truncate">{user.name}</p>
+            <p className="text-xs text-muted-foreground">
+              {user.role === "OWNER" ? "👑 Pemilik" : "👤 Staff"}
+            </p>
+          </div>
+        </div>
+        <form action={logout}>
+          <Button
+            type="submit"
+            variant="outline"
+            className="w-full h-11 text-sm font-medium"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Keluar
+          </Button>
+        </form>
+      </SidebarFooter>
+    </Sidebar>
+  );
+}
