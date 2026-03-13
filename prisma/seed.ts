@@ -1,23 +1,38 @@
 // =============================================================================
 // Database Seed Script
 // =============================================================================
-// Seeds the database with default categories for a culinary business.
+// Seeds the database with:
+// 1. Default categories for a culinary business
+// 2. Default user accounts (via Supabase Auth Admin API + Prisma)
 //
 // Run with: npx prisma db seed
-// (Requires `prisma.seed` config in package.json)
 //
-// WHY seed default categories?
-// New OWNER users shouldn't have to manually create common categories.
-// Pre-populating saves setup time and ensures data consistency.
+// PREREQUISITES:
+// - .env must have valid SUPABASE_SERVICE_ROLE_KEY (for creating auth users)
+// - .env must have valid NEXT_PUBLIC_SUPABASE_URL
+// - .env must have valid DATABASE_URL
 // =============================================================================
 
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { createClient } from "@supabase/supabase-js";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
 
-// Default categories for a culinary business
+// Create Supabase Admin client using Service Role Key
+// WHY service role key? The anon key can only sign up users (with email
+// confirmation flow). The service role key lets us create users directly
+// without email verification — perfect for seeding test accounts.
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { autoRefreshToken: false, persistSession: false } }
+);
+
+// =========================================================================
+// Default Categories
+// =========================================================================
 const DEFAULT_CATEGORIES = [
   // --- Income categories ---
   { name: "Penjualan Harian", type: "INCOME" as const },
@@ -36,12 +51,34 @@ const DEFAULT_CATEGORIES = [
   { name: "Pengeluaran Lain-lain", type: "EXPENSE" as const },
 ];
 
-async function main() {
-  console.log("🌱 Seeding database...");
+// =========================================================================
+// Default Users
+// =========================================================================
+const DEFAULT_USERS = [
+  {
+    email: "hani@legitbites.com",
+    password: "admin123",
+    name: "Hani",
+    role: "OWNER" as const,
+  },
+  {
+    email: "caca@legitbites.com",
+    password: "staf123",
+    name: "Caca",
+    role: "STAFF" as const,
+  },
+  {
+    email: "fardan@legitbites.com",
+    password: "staf123",
+    name: "Fardan",
+    role: "STAFF" as const,
+  },
+];
 
+async function main() {
+  // --- Seed Categories ---
+  console.log("🌱 Seeding categories...");
   for (const category of DEFAULT_CATEGORIES) {
-    // WHY upsert instead of create?
-    // Safe to run multiple times — won't fail if categories already exist.
     await prisma.category.upsert({
       where: { name: category.name },
       update: {},
@@ -50,7 +87,74 @@ async function main() {
     console.log(`  ✅ ${category.type === "INCOME" ? "💰" : "💸"} ${category.name}`);
   }
 
+  // --- Seed Users ---
+  console.log("\n👤 Seeding users...");
+  for (const userData of DEFAULT_USERS) {
+    // Step 1: Create user in Supabase Auth
+    const { data: authData, error: authError } =
+      await supabaseAdmin.auth.admin.createUser({
+        email: userData.email,
+        password: userData.password,
+        email_confirm: true, // Skip email verification for seeded users
+      });
+
+    if (authError) {
+      // If user already exists, fetch their ID instead
+      if (authError.message.includes("already been registered")) {
+        console.log(`  ⏭️  ${userData.name} (${userData.email}) — sudah ada di Auth`);
+
+        // Try to find existing auth user by email
+        const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
+        const existing = existingUsers?.users?.find(
+          (u) => u.email === userData.email
+        );
+
+        if (existing) {
+          // Upsert to Prisma with the existing auth ID
+          await prisma.user.upsert({
+            where: { id: existing.id },
+            update: { name: userData.name, role: userData.role },
+            create: {
+              id: existing.id,
+              email: userData.email,
+              name: userData.name,
+              role: userData.role,
+            },
+          });
+          console.log(`  ✅ ${userData.role === "OWNER" ? "👑" : "👤"} ${userData.name} — synced ke database`);
+        }
+        continue;
+      }
+
+      console.error(`  ❌ Gagal buat ${userData.name}:`, authError.message);
+      continue;
+    }
+
+    // Step 2: Create corresponding user in our Prisma database
+    if (authData.user) {
+      await prisma.user.upsert({
+        where: { id: authData.user.id },
+        update: { name: userData.name, role: userData.role },
+        create: {
+          id: authData.user.id,
+          email: userData.email,
+          name: userData.name,
+          role: userData.role,
+        },
+      });
+      console.log(`  ✅ ${userData.role === "OWNER" ? "👑" : "👤"} ${userData.name} (${userData.email}) — ${userData.role}`);
+    }
+  }
+
   console.log("\n✨ Seeding selesai!");
+  console.log("\n📋 Akun yang bisa digunakan:");
+  console.log("   ┌───────────┬──────────────────────────┬───────────┬─────────┐");
+  console.log("   │ Nama      │ Email                    │ Password  │ Role    │");
+  console.log("   ├───────────┼──────────────────────────┼───────────┼─────────┤");
+  console.log("   │ Hani      │ hani@legitbites.com      │ admin123  │ OWNER   │");
+  console.log("   │ Caca      │ caca@legitbites.com      │ staf123   │ STAFF   │");
+  console.log("   │ Fardan    │ fardan@legitbites.com    │ staf123   │ STAFF   │");
+  console.log("   └───────────┴──────────────────────────┴───────────┴─────────┘");
 }
 
 main()
