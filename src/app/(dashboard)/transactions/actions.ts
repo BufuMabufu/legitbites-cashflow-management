@@ -7,9 +7,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
 /**
  * Creates a new transaction (income or expense).
@@ -65,6 +65,33 @@ export async function createTransaction(formData: FormData) {
 
   const amount = parseFloat(amountStr);
   const date = new Date(dateStr);
+  let imageUrl: string | null = null;
+  
+  const receiptFile = formData.get("receipt") as File | null;
+  if (receiptFile && receiptFile.size > 0) {
+    const supabaseAdmin = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    const fileExt = receiptFile.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+    const filePath = `${user.id}/${fileName}`;
+    
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from('receipts')
+      .upload(filePath, receiptFile);
+      
+    if (uploadError) {
+      console.error("Storage upload error:", uploadError);
+      return { error: "Gagal mengunggah foto bukti." };
+    }
+    
+    const { data: publicUrlData } = supabaseAdmin.storage
+      .from('receipts')
+      .getPublicUrl(filePath);
+      
+    imageUrl = publicUrlData.publicUrl;
+  }
 
   await prisma.transaction.create({
     data: {
@@ -72,6 +99,7 @@ export async function createTransaction(formData: FormData) {
       type: type as "INCOME" | "EXPENSE",
       date,
       description,
+      imageUrl,
       categoryId,
       userId: user.id,
     },
@@ -79,5 +107,34 @@ export async function createTransaction(formData: FormData) {
 
   revalidatePath("/");
   revalidatePath("/transactions");
-  redirect("/transactions");
+  return { success: true };
+}
+
+/**
+ * Deletes a transaction.
+ * Only the OWNER role is authorized to perform this action.
+ */
+export async function deleteTransaction(formData: FormData) {
+  const user = await getCurrentUser();
+  if (!user || user.role !== "OWNER") {
+    return { error: "Anda tidak memiliki akses untuk menghapus transaksi." };
+  }
+
+  const transactionId = formData.get("id") as string;
+  if (!transactionId) {
+    return { error: "ID Transaksi tidak valid." };
+  }
+
+  try {
+    await prisma.transaction.delete({
+      where: { id: transactionId },
+    });
+
+    revalidatePath("/");
+    revalidatePath("/transactions");
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to delete transaction:", error);
+    return { error: "Gagal menghapus transaksi." };
+  }
 }

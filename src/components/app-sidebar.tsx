@@ -16,6 +16,8 @@ import {
   PlusCircle,
   FolderOpen,
   LogOut,
+  Moon,
+  Sun,
 } from "lucide-react";
 import {
   Sidebar,
@@ -32,7 +34,9 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import Swal from "sweetalert2";
 import { logout } from "@/app/login/actions";
+import { useTheme } from "next-themes";
 
 type NavItem = {
   title: string;
@@ -76,6 +80,7 @@ interface AppSidebarProps {
 
 export function AppSidebar({ user }: AppSidebarProps) {
   const pathname = usePathname();
+  const { theme, setTheme } = useTheme();
 
   // Filter nav items based on user role
   const visibleItems = NAV_ITEMS.filter(
@@ -89,6 +94,23 @@ export function AppSidebar({ user }: AppSidebarProps) {
     .join("")
     .toUpperCase()
     .slice(0, 2);
+
+  const handleLogout = async () => {
+    const result = await Swal.fire({
+      title: "Yakin untuk logout?",
+      text: "Anda akan keluar dari sesi saat ini.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#10b981",
+      cancelButtonColor: "#ef4444",
+      confirmButtonText: "Ya, logout!",
+      cancelButtonText: "Batal",
+    });
+
+    if (result.isConfirmed) {
+      await logout();
+    }
+  };
 
   return (
     <Sidebar>
@@ -152,16 +174,30 @@ export function AppSidebar({ user }: AppSidebarProps) {
             </p>
           </div>
         </div>
-        <form action={logout}>
+        <div className="grid grid-cols-2 gap-2 mt-2">
           <Button
-            type="submit"
+            type="button"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             variant="outline"
             className="w-full h-11 text-sm font-medium"
+          >
+            {theme === "dark" ? (
+              <Sun className="w-4 h-4 mr-2" />
+            ) : (
+              <Moon className="w-4 h-4 mr-2" />
+            )}
+            Mode
+          </Button>
+          <Button
+            type="button"
+            onClick={handleLogout}
+            variant="outline"
+            className="w-full h-11 text-sm font-medium text-destructive hover:bg-destructive hover:text-destructive-foreground"
           >
             <LogOut className="w-4 h-4 mr-2" />
             Keluar
           </Button>
-        </form>
+        </div>
       </SidebarFooter>
     </Sidebar>
   );

@@ -96,6 +96,7 @@ model Transaction {
   type        TransactionType
   date        DateTime        @db.Date
   description String?
+  imageUrl    String?
   createdAt   DateTime        @default(now()) @map("created_at")
   updatedAt   DateTime        @updatedAt @map("updated_at")
 

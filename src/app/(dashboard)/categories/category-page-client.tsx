@@ -204,7 +204,12 @@ export function CategoryPageClient({ categories }: CategoryPageClientProps) {
                 <Label htmlFor="type">Tipe</Label>
                 <Select name="type" required>
                   <SelectTrigger className="h-12 text-base">
-                    <SelectValue placeholder="Pilih tipe kategori" />
+                    <SelectValue placeholder="Pilih tipe kategori">
+                      {(value: string | null) => {
+                        if (!value) return <span className="text-muted-foreground">Pilih tipe kategori</span>;
+                        return value === "INCOME" ? "💰 Pemasukan" : "💸 Pengeluaran";
+                      }}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="INCOME">💰 Pemasukan</SelectItem>
@@ -270,7 +275,12 @@ export function CategoryPageClient({ categories }: CategoryPageClientProps) {
                 <Label htmlFor="edit-type">Tipe</Label>
                 <Select name="type" defaultValue={editingCategory.type}>
                   <SelectTrigger className="h-12 text-base">
-                    <SelectValue />
+                    <SelectValue>
+                      {(value: string | null) => {
+                        if (!value) return null;
+                        return value === "INCOME" ? "💰 Pemasukan" : "💸 Pengeluaran";
+                      }}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="INCOME">💰 Pemasukan</SelectItem>

@@ -16,40 +16,18 @@
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { PlusCircle } from "lucide-react";
+import { TransactionItem } from "./transaction-item";
+import { Button } from "@/components/ui/button";
 
-/**
- * Formats a number as Indonesian Rupiah currency.
- */
-function formatRupiah(amount: number): string {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
-
-/**
- * Formats a date for display in Indonesian locale.
- */
-function formatDate(date: Date): string {
-  return new Date(date).toLocaleDateString("id-ID", {
-    weekday: "short",
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
 
 export default async function TransactionsPage() {
   const user = await getCurrentUser();
   if (!user) return null;
 
-  // RBAC: OWNER sees all, STAFF sees only their own
-  const whereClause = user.role === "OWNER" ? {} : { userId: user.id };
+  // RBAC: STAFF and OWNER can see all transactions
+  const whereClause = {};
 
   const transactions = await prisma.transaction.findMany({
     where: whereClause,
@@ -64,23 +42,19 @@ export default async function TransactionsPage() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            Riwayat Transaksi
-          </h1>
-          <p className="text-muted-foreground">
-            {user.role === "OWNER"
-              ? "Semua transaksi dari seluruh tim"
-              : "Transaksi yang kamu catat"}
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Riwayat Transaksi</h1>
+          <p className="text-lg md:text-xl text-muted-foreground mt-2">
+            Kelola dan pantau semua transaksi yang telah dicatat.
           </p>
         </div>
-        <Link
-          href="/transactions/new"
-          className="inline-flex items-center justify-center h-12 px-5 text-base rounded-xl bg-linear-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold shadow-lg transition-all"
-        >
-          <PlusCircle className="w-5 h-5 mr-2" />
-          Catat Baru
+
+        <Link href="/transactions/new">
+          <Button className="w-full sm:w-auto h-12 md:h-16 text-base md:text-xl font-bold rounded-xl md:rounded-2xl bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md transition-transform hover:-translate-y-1">
+            <PlusCircle className="mr-2 h-5 w-5 md:h-6 md:w-6" />
+            Catat Transaksi
+          </Button>
         </Link>
       </div>
 
@@ -103,55 +77,7 @@ export default async function TransactionsPage() {
       ) : (
         <div className="space-y-3">
           {transactions.map((tx) => (
-            <Card key={tx.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge
-                        variant="secondary"
-                        className={
-                          tx.type === "INCOME"
-                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
-                            : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                        }
-                      >
-                        {tx.type === "INCOME" ? "Pemasukan" : "Pengeluaran"}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {tx.category.name}
-                      </span>
-                    </div>
-                    {tx.description && (
-                      <p className="text-sm text-muted-foreground truncate">
-                        {tx.description}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                      <span>{formatDate(tx.date)}</span>
-                      {user.role === "OWNER" && (
-                        <>
-                          <span>•</span>
-                          <span>oleh {tx.user.name}</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Amount — right-aligned, colored */}
-                  <div
-                    className={`text-lg font-bold whitespace-nowrap ml-4 ${
-                      tx.type === "INCOME"
-                        ? "text-emerald-600"
-                        : "text-red-600"
-                    }`}
-                  >
-                    {tx.type === "INCOME" ? "+" : "-"}
-                    {formatRupiah(Number(tx.amount))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <TransactionItem key={tx.id} transaction={{ ...tx, amount: Number(tx.amount) }} userRole={user.role} />
           ))}
         </div>
       )}
