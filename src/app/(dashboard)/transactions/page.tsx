@@ -18,7 +18,7 @@ import { prisma } from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import { PlusCircle } from "lucide-react";
-import { TransactionItem } from "./transaction-item";
+import { TransactionDataTable } from "./transaction-data-table";
 import { Button } from "@/components/ui/button";
 
 
@@ -75,11 +75,10 @@ export default async function TransactionsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-3">
-          {transactions.map((tx) => (
-            <TransactionItem key={tx.id} transaction={{ ...tx, amount: Number(tx.amount) }} userRole={user.role} />
-          ))}
-        </div>
+        <TransactionDataTable 
+          transactions={transactions.map(tx => ({ ...tx, amount: Number(tx.amount) }))}
+          userRole={user.role}
+        />
       )}
     </div>
   );

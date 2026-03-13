@@ -214,9 +214,9 @@ Aplikasi menggunakan **Role-Based Access Control** sederhana dengan 2 role:
 - Input & lihat semua transaksi
 
 ### 👤 STAFF (Karyawan)
-- Input transaksi harian (pemasukan/pengeluaran)
-- Lihat riwayat transaksi milik sendiri
-- **Tidak bisa** mengakses laporan atau master data
+- Input transaksi harian (pemasukan/pengeluaran) menggunakan form modern (dengan unggah kuitansi)
+- Lihat riwayat transaksi dan **Export ke CSV** menggunakan Data Table interaktif
+- **Tidak bisa** mengakses laporan atau fitur manajemen master data
 
 ### Cara Kerja
 
