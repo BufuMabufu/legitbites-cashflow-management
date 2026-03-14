@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Pie, PieChart, Cell, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from "recharts";
+import { Pie, PieChart, Cell, ResponsiveContainer, Legend } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 interface IncomeDonutChartProps {
@@ -22,22 +22,19 @@ function formatRupiah(amount: number): string {
   }).format(amount);
 }
 
-const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: { payload: { name: string; value: number } }[] }) => {
-  if (active && payload && payload.length) {
-    const data = payload[0].payload;
-    return (
-      <div className="bg-white dark:bg-slate-950 p-3 rounded-xl border shadow-lg">
-        <p className="font-bold text-sm mb-1">{data.name}</p>
-        <p className="font-semibold text-emerald-600">
-          {formatRupiah(data.value)}
-        </p>
-      </div>
-    );
-  }
-  return null;
-};
-
 export function IncomeDonutChart({ data, totalIncome }: IncomeDonutChartProps) {
+  const [activeIndex, setActiveIndex] = React.useState<number | null>(null);
+
+  const onPieEnter = (_: unknown, index: number) => {
+    setActiveIndex(index);
+  };
+
+  const onPieLeave = () => {
+    setActiveIndex(null);
+  };
+
+  const activeData = activeIndex !== null ? data[activeIndex] : null;
+
   return (
     <Card className="flex flex-col border-emerald-100 bg-emerald-50/30 dark:border-emerald-900 dark:bg-emerald-950/10">
       <CardHeader className="items-center pb-0">
@@ -55,7 +52,6 @@ export function IncomeDonutChart({ data, totalIncome }: IncomeDonutChartProps) {
           <div className="h-[280px] w-full mt-4 relative">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <RechartsTooltip content={<CustomTooltip />} />
                 <Pie
                   data={data}
                   cx="50%"
@@ -66,9 +62,19 @@ export function IncomeDonutChart({ data, totalIncome }: IncomeDonutChartProps) {
                   dataKey="value"
                   strokeWidth={2}
                   stroke="var(--background)"
+                  onMouseEnter={onPieEnter}
+                  onMouseLeave={onPieLeave}
+                  style={{ cursor: "pointer", outline: "none" }}
                 >
                   {data.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={entry.color} 
+                      style={{
+                        filter: activeIndex === index ? "brightness(1.1)" : "none",
+                        transition: "filter 0.2s ease"
+                      }}
+                    />
                   ))}
                 </Pie>
                 <Legend 
@@ -79,7 +85,12 @@ export function IncomeDonutChart({ data, totalIncome }: IncomeDonutChartProps) {
                     return (
                       <ul className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm mt-4">
                         {payload?.map((entry, index) => (
-                          <li key={`item-${index}`} className="flex items-center text-muted-foreground font-medium">
+                          <li 
+                            key={`item-${index}`} 
+                            className={`flex items-center font-medium transition-colors ${
+                              activeIndex === index || activeIndex === null ? "text-muted-foreground" : "text-muted-foreground/30"
+                            }`}
+                          >
                             <span 
                               className="w-3 h-3 rounded-full mr-2"
                               style={{ backgroundColor: entry.color }}
@@ -93,11 +104,13 @@ export function IncomeDonutChart({ data, totalIncome }: IncomeDonutChartProps) {
                 />
               </PieChart>
             </ResponsiveContainer>
-            {/* Center Label */}
+            {/* Dynamic Center Label */}
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none mt-[-36px]">
-              <span className="text-xs font-semibold text-muted-foreground uppercase opacity-80">Total</span>
+              <span className="text-xs font-semibold text-muted-foreground uppercase opacity-80 truncate max-w-[120px]">
+                {activeData ? activeData.name : "Total"}
+              </span>
               <span className="text-base md:text-lg font-bold text-emerald-600 px-2 w-full text-center truncate">
-                {formatRupiah(totalIncome)}
+                {formatRupiah(activeData ? activeData.value : totalIncome)}
               </span>
             </div>
           </div>
