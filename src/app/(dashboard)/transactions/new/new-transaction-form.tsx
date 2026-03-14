@@ -170,7 +170,7 @@ export function NewTransactionForm({ categories }: NewTransactionFormProps) {
                 Kategori
               </Label>
               <input type="hidden" name="categoryId" value={categoryId} />
-              <Select value={categoryId || undefined} onValueChange={(v) => setCategoryId(v || "")} required>
+              <Select value={categoryId} onValueChange={(v) => setCategoryId(v || "")} required>
                 <SelectTrigger className="w-full h-12 md:h-14 text-base md:text-lg rounded-xl">
                   <SelectValue placeholder="Pilih kategori">
                     {categoryId

@@ -131,26 +131,48 @@ async function getDashboardData(rangeParam: string) {
   const chartDataIncomeMap = new Map<string, number>();
   const chartDataExpenseMap = new Map<string, number>();
 
-  // Use a sensible strategy: if range is short, fill all days. If long, just use the grouped points.
-  // We'll just group everything perfectly as fetched for simplicity.
-  // Pre-fill last 7 days ONLY if range is "7d" or "today" for visual padding, else let it be sparse.
+  // Use a sensible strategy: adapt the grouping format based on the selected range.
+  const isMonthGrouping = rangeParam === "this_year" || rangeParam === "all";
+  const dateLocales: Intl.DateTimeFormatOptions = isMonthGrouping 
+    ? { month: "long", year: "numeric" } 
+    : { day: "numeric", month: "short", year: "numeric" };
+
   if (rangeParam === "today" || rangeParam === "7d") {
     const todayUTC = new Date(new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" }));
     for (let i = 6; i >= 0; i--) {
       const d = new Date(todayUTC);
       d.setDate(d.getDate() - i);
-      const dateLabel = d.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+      const dateLabel = d.toLocaleDateString("id-ID", dateLocales);
+      chartDataIncomeMap.set(dateLabel, 0);
+      chartDataExpenseMap.set(dateLabel, 0);
+    }
+  } else if (rangeParam === "this_year") {
+    const currentYear = new Date().getFullYear();
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(currentYear, i, 1);
+      const dateLabel = d.toLocaleDateString("id-ID", dateLocales);
+      chartDataIncomeMap.set(dateLabel, 0);
+      chartDataExpenseMap.set(dateLabel, 0);
+    }
+  } else if (rangeParam === "this_month") {
+    const today = new Date();
+    const currentDay = today.getDate();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+    for (let i = 1; i <= currentDay; i++) {
+      const d = new Date(currentYear, currentMonth, i);
+      const dateLabel = d.toLocaleDateString("id-ID", dateLocales);
       chartDataIncomeMap.set(dateLabel, 0);
       chartDataExpenseMap.set(dateLabel, 0);
     }
   }
 
   for (const group of rangeIncomeTransactions) {
-    const dateLabel = new Date(group.date).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+    const dateLabel = new Date(group.date).toLocaleDateString("id-ID", dateLocales);
     chartDataIncomeMap.set(dateLabel, (chartDataIncomeMap.get(dateLabel) || 0) + Number(group._sum.amount ?? 0));
   }
   for (const group of rangeExpenseTransactions) {
-    const dateLabel = new Date(group.date).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+    const dateLabel = new Date(group.date).toLocaleDateString("id-ID", dateLocales);
     chartDataExpenseMap.set(dateLabel, (chartDataExpenseMap.get(dateLabel) || 0) + Number(group._sum.amount ?? 0));
   }
 
