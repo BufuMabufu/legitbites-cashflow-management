@@ -58,6 +58,15 @@ function getDateRange(rangeParam: string): { gte: Date; lt: Date; label: string 
 async function getDashboardData(rangeParam: string) {
   const { gte, lt, label: rangeLabel } = getDateRange(rangeParam);
 
+  // For the line charts, if range is "today", we still want to show a 7-day trend
+  // so the chart doesn't look empty and weird with flat zeros.
+  let chartGte = gte;
+  if (rangeParam === "today") {
+    const todayUTC = new Date(new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" }));
+    chartGte = new Date(todayUTC);
+    chartGte.setDate(chartGte.getDate() - 6);
+  }
+
   const [
     rangeIncomeResult, 
     rangeExpenseResult, 
@@ -88,13 +97,13 @@ async function getDashboardData(rangeParam: string) {
     prisma.transaction.groupBy({
       by: ["date"],
       _sum: { amount: true },
-      where: { type: "INCOME", date: { gte, lt } },
+      where: { type: "INCOME", date: { gte: chartGte, lt } },
       orderBy: { date: "asc" }
     }),
     prisma.transaction.groupBy({
       by: ["date"],
       _sum: { amount: true },
-      where: { type: "EXPENSE", date: { gte, lt } },
+      where: { type: "EXPENSE", date: { gte: chartGte, lt } },
       orderBy: { date: "asc" }
     }),
     // Top Expense Categories (Donut)
@@ -285,6 +294,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     timeZone: "Asia/Jakarta"
   });
 
+  // Determine chart title: if 'today', we actually fetched 7 days of context
+  const chartLabel = rangeParam === "today" ? "7 Hari Terakhir" : rangeLabel;
+
   return (
     <div className="space-y-6 md:space-y-8">
       {/* Header: Greeting & Filter */}
@@ -368,8 +380,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         <div className="lg:col-span-2 space-y-4 md:space-y-6">
           {/* Line Charts Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-            <SalesChart data={chartDataIncome} rangeLabel={rangeLabel} />
-            <ExpenseChart data={chartDataExpense} rangeLabel={rangeLabel} />
+            <SalesChart data={chartDataIncome} rangeLabel={chartLabel} />
+            <ExpenseChart data={chartDataExpense} rangeLabel={chartLabel} />
           </div>
 
           {/* Recent Transactions Table */}
