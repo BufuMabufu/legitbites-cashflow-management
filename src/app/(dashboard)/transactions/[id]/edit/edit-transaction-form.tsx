@@ -26,7 +26,7 @@ type Category = {
 
 type Transaction = {
   id: string;
-  amount: any;
+  amount: number;
   type: "INCOME" | "EXPENSE" | string;
   date: Date;
   description: string | null;

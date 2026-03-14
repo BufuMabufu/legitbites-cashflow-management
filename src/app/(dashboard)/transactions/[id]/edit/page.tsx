@@ -33,5 +33,12 @@ export default async function EditTransactionPage({ params }: { params: Promise<
     notFound();
   }
 
-  return <EditTransactionForm transaction={transaction} categories={categories} />;
+  // WHY serialize? Prisma's Decimal type is not a plain object and 
+  // cannot be passed directly to Client Components in Next.js.
+  const serializedTransaction = {
+    ...transaction,
+    amount: Number(transaction.amount),
+  };
+
+  return <EditTransactionForm transaction={serializedTransaction} categories={categories} />;
 }
