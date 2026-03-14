@@ -24,7 +24,7 @@ import { NextResponse, type NextRequest } from "next/server";
 // Routes that don't require authentication
 const PUBLIC_ROUTES = ["/login"];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
   // Create Supabase client that can read/write cookies in the middleware
