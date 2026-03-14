@@ -35,7 +35,20 @@ export function DashboardFilter() {
     startTransition(() => {
       router.push(`/?${params.toString()}`);
     });
+    
+    // Smooth scroll to the results area so user sees updated charts immediately
+    setTimeout(() => {
+      document.getElementById("dashboard-content")?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
   };
+
+  /** 
+   * Sort entries so the currently selected range is always the first option 
+   * in the list, as requested by the user.
+   */
+  const sortedRangeEntries = Object.entries(RANGE_LABELS).sort(([key]) => 
+    key === currentRange ? -1 : 1
+  );
 
   return (
     <div className="flex items-center gap-2">
@@ -51,11 +64,11 @@ export function DashboardFilter() {
           </SelectValue>
         </SelectTrigger>
         <SelectContent className="rounded-xl">
-          <SelectItem value="all" className="text-base py-3">Semua Waktu</SelectItem>
-          <SelectItem value="today" className="text-base py-3">Hari Ini</SelectItem>
-          <SelectItem value="7d" className="text-base py-3">7 Hari Terakhir</SelectItem>
-          <SelectItem value="this_month" className="text-base py-3">Bulan Ini</SelectItem>
-          <SelectItem value="this_year" className="text-base py-3">Tahun Ini</SelectItem>
+          {sortedRangeEntries.map(([value, label]) => (
+            <SelectItem key={value} value={value} className="text-base py-3">
+              {label}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
     </div>

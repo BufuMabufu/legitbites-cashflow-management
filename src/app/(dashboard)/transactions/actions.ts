@@ -9,6 +9,7 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@/generated/prisma/client";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
 /**
@@ -212,12 +213,12 @@ export async function updateTransaction(id: string, formData: FormData) {
   }
 
   try {
-    const dataToUpdate: any = {
+    const dataToUpdate: Prisma.TransactionUpdateInput = {
       amount,
       type: type as "INCOME" | "EXPENSE",
       date,
       description,
-      categoryId,
+      category: { connect: { id: categoryId } },
     };
 
     if (imageUrl) {

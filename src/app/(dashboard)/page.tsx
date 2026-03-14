@@ -311,7 +311,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       </div>
 
       {/* Insight Auto-Summary */}
-      <Card className="border-indigo-100 bg-linear-to-r from-indigo-50/50 to-blue-50/50 dark:border-indigo-900/50 dark:from-indigo-950/20 dark:to-blue-900/10 shadow-sm">
+      <div id="dashboard-content" className="scroll-mt-32">
+        <Card className="border-indigo-100 bg-linear-to-r from-indigo-50/50 to-blue-50/50 dark:border-indigo-900/50 dark:from-indigo-950/20 dark:to-blue-900/10 shadow-sm">
         <CardContent className="p-4 md:p-6 flex items-start gap-4">
           <div className="bg-indigo-100 dark:bg-indigo-900/50 p-3 rounded-full shrink-0">
             <Sparkles className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
@@ -324,6 +325,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           </div>
         </CardContent>
       </Card>
+    </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">

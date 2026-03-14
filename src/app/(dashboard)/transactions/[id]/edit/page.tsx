@@ -8,7 +8,7 @@
 import { notFound, redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { EditTransactionForm } from "./edit-transaction-form";
+import { EditTransactionForm } from "@/app/(dashboard)/transactions/[id]/edit/edit-transaction-form";
 
 export default async function EditTransactionPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
