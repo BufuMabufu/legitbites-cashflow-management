@@ -169,23 +169,17 @@ export function NewTransactionForm({ categories }: NewTransactionFormProps) {
                 Kategori
               </Label>
               <Select name="categoryId" required>
-                <SelectTrigger className="h-12 md:h-14 text-base md:text-lg rounded-xl">
-                  <SelectValue placeholder="Pilih kategori">
-                    {(value: string | null) => {
-                       if (!value) return <span className="text-muted-foreground">Pilih kategori</span>;
-                       const selected = categories.find((c) => c.id === value);
-                       return selected ? selected.name : <span className="text-muted-foreground">Pilih kategori</span>;
-                    }}
-                  </SelectValue>
+                <SelectTrigger className="w-full h-12 md:h-14 text-base md:text-lg rounded-xl">
+                  <SelectValue placeholder="Pilih kategori" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="min-w-[var(--radix-select-trigger-width)]">
                   {filteredCategories.length === 0 ? (
                     <SelectItem value="__empty" disabled className="text-base">
                       Belum ada kategori {type === "INCOME" ? "pemasukan" : "pengeluaran"}
                     </SelectItem>
                   ) : (
                     filteredCategories.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.id} className="text-base md:text-lg py-2 cursor-pointer">
+                      <SelectItem key={cat.id} value={cat.id} className="text-base md:text-lg py-3 cursor-pointer">
                         {cat.name}
                       </SelectItem>
                     ))

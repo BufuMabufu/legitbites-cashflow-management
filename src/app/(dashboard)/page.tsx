@@ -317,44 +317,43 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
 
       {/* Middle Body: Charts & Top Categories */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+        {/* Left 2/3 Column: Charts then Quick Actions */}
         <div className="lg:col-span-2 space-y-4 md:space-y-6">
+          {/* Line Charts Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             <SalesChart data={chartDataIncome} />
             <ExpenseChart data={chartDataExpense} />
           </div>
-          
-          {/* Quick Actions — bigger buttons for seniors */}
+
+          {/* Recent Transactions Table */}
+          <RecentTransactionsTable transactions={recentTransactions.map(tx => ({ ...tx, amount: Number(tx.amount) }))} />
+
+          {/* Quick Actions — clean, equal-height buttons */}
           <div>
             <h2 className="text-xl md:text-2xl font-bold mb-4">Aksi Cepat</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+            <div className="grid grid-cols-2 gap-4">
               <Link
                 href="/transactions/new?type=INCOME"
-                className="flex flex-col items-center justify-center gap-3 h-32 md:h-40 text-2xl md:text-2xl font-bold rounded-2xl bg-linear-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg transition-all"
+                className="flex items-center justify-center gap-3 h-16 md:h-20 text-lg md:text-xl font-bold rounded-2xl bg-linear-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5 active:translate-y-0"
               >
-                <PlusCircle className="w-10 h-10 md:w-14 md:h-14" />
+                <PlusCircle className="w-6 h-6 md:w-7 md:h-7 shrink-0" />
                 <span>Pemasukan</span>
               </Link>
               <Link
                 href="/transactions/new?type=EXPENSE"
-                className="flex flex-col items-center justify-center gap-3 h-32 md:h-40 text-2xl md:text-2xl font-bold rounded-2xl bg-linear-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white shadow-lg transition-all"
+                className="flex items-center justify-center gap-3 h-16 md:h-20 text-lg md:text-xl font-bold rounded-2xl bg-linear-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5 active:translate-y-0"
               >
-                <PlusCircle className="w-10 h-10 md:w-14 md:h-14" />
+                <PlusCircle className="w-6 h-6 md:w-7 md:h-7 shrink-0" />
                 <span>Pengeluaran</span>
               </Link>
             </div>
           </div>
-          
         </div>
 
-        {/* Right Sidebar on Desktop: Donut Chart & Mini Table */}
+        {/* Right Sidebar on Desktop: Donut Chart */}
         <div className="space-y-4 md:space-y-6">
           <ExpenseDonutChart data={donutData} totalExpense={currentExpense} />
         </div>
-      </div>
-
-      {/* Bottom Section: Recent Transactions */}
-      <div className="mt-8">
-        <RecentTransactionsTable transactions={recentTransactions.map(tx => ({ ...tx, amount: Number(tx.amount) }))} />
       </div>
 
     </div>
