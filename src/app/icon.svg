@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <style>
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+    @keyframes steam-rise {
+      0% { transform: translateY(0) scale(1); opacity: 0; }
+      50% { opacity: 0.6; }
+      100% { transform: translateY(-15px) scale(1.5); opacity: 0; }
+    }
+    .bolu {
+      animation: bounce 2s ease-in-out infinite;
+      transform-origin: center bottom;
+    }
+    .steam-1 { animation: steam-rise 2s infinite 0s; }
+    .steam-2 { animation: steam-rise 2s infinite 0.6s; }
+    .steam-3 { animation: steam-rise 2s infinite 1.2s; }
+  </style>
+
+  <g class="bolu">
+    <!-- Steam -->
+    <path class="steam-1" d="M 35 30 Q 30 20 40 10" stroke="#94a3b8" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path class="steam-2" d="M 50 25 Q 45 15 55 5" stroke="#94a3b8" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path class="steam-3" d="M 65 30 Q 70 20 60 10" stroke="#94a3b8" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+    <!-- Left Petal -->
+    <path d="M 45 50 C 20 20, 0 40, 15 60 C 25 70, 35 60, 45 50 Z" fill="#f472b6" />
+    
+    <!-- Right Petal -->
+    <path d="M 55 50 C 80 20, 100 40, 85 60 C 75 70, 65 60, 55 50 Z" fill="#f472b6" />
+
+    <!-- Back Top Petal -->
+    <path d="M 30 50 Q 50 10 70 50 Z" fill="#fce7f3" />
+
+    <!-- Cup -->
+    <path d="M 30 90 L 15 55 L 85 55 L 70 90 Z" fill="#f8fafc" stroke="#cbd5e1" stroke-width="3" stroke-linejoin="round"/>
+    <!-- Cup creases -->
+    <path d="M 38 90 L 29 55 M 50 90 L 50 55 M 62 90 L 71 55" stroke="#cbd5e1" stroke-width="3" stroke-linecap="round"/>
+    
+    <!-- Front Petal (Spilling over cup) -->
+    <path d="M 30 55 Q 50 20 70 55 Q 50 75 30 55 Z" fill="#db2777" />
+    
+    <!-- Chocochips / Spots -->
+    <circle cx="45" cy="45" r="2.5" fill="#fdf2f8"/>
+    <circle cx="55" cy="45" r="2.5" fill="#fdf2f8"/>
+    <circle cx="50" cy="55" r="2.5" fill="#fdf2f8"/>
+    <circle cx="25" cy="50" r="2" fill="#be185d"/>
+    <circle cx="75" cy="50" r="2" fill="#be185d"/>
+  </g>
+</svg>
