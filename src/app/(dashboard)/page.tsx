@@ -139,18 +139,18 @@ async function getDashboardData(rangeParam: string) {
     for (let i = 6; i >= 0; i--) {
       const d = new Date(todayUTC);
       d.setDate(d.getDate() - i);
-      const dateLabel = d.toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+      const dateLabel = d.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
       chartDataIncomeMap.set(dateLabel, 0);
       chartDataExpenseMap.set(dateLabel, 0);
     }
   }
 
   for (const group of rangeIncomeTransactions) {
-    const dateLabel = new Date(group.date).toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+    const dateLabel = new Date(group.date).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
     chartDataIncomeMap.set(dateLabel, (chartDataIncomeMap.get(dateLabel) || 0) + Number(group._sum.amount ?? 0));
   }
   for (const group of rangeExpenseTransactions) {
-    const dateLabel = new Date(group.date).toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+    const dateLabel = new Date(group.date).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
     chartDataExpenseMap.set(dateLabel, (chartDataExpenseMap.get(dateLabel) || 0) + Number(group._sum.amount ?? 0));
   }
 
@@ -346,8 +346,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         <div className="lg:col-span-2 space-y-4 md:space-y-6">
           {/* Line Charts Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-            <SalesChart data={chartDataIncome} />
-            <ExpenseChart data={chartDataExpense} />
+            <SalesChart data={chartDataIncome} rangeLabel={rangeLabel} />
+            <ExpenseChart data={chartDataExpense} rangeLabel={rangeLabel} />
           </div>
 
           {/* Recent Transactions Table */}

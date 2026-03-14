@@ -5,6 +5,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 
 interface SalesChartProps {
   data: { date: string; income: number }[];
+  rangeLabel: string;
 }
 
 function formatRupiahShort(amount: number) {
@@ -14,11 +15,13 @@ function formatRupiahShort(amount: number) {
   return `Rp ${amount}`;
 }
 
-export function SalesChart({ data }: SalesChartProps) {
+export function SalesChart({ data, rangeLabel }: SalesChartProps) {
   return (
     <Card className="col-span-1 border-emerald-200 dark:border-emerald-900/50">
       <CardHeader>
-        <CardTitle className="text-xl md:text-2xl font-bold">Grafik Pemasukan (7 Hari Terakhir)</CardTitle>
+        <CardTitle className="text-lg md:text-xl font-bold">
+          📈 Pemasukan — {rangeLabel}
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="h-[300px] md:h-[400px] w-full mt-4">
@@ -32,10 +35,13 @@ export function SalesChart({ data }: SalesChartProps) {
               </defs>
               <XAxis 
                 dataKey="date" 
-                tick={{ fontSize: 14 }}
+                tick={{ fontSize: 12 }}
                 tickMargin={10}
                 axisLine={false}
                 tickLine={false}
+                angle={-30}
+                textAnchor="end"
+                height={60}
               />
               <YAxis 
                 tickFormatter={formatRupiahShort} 
