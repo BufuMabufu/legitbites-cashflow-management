@@ -42,7 +42,7 @@ export default function LoginPage() {
       <Card className="relative w-full max-w-md shadow-2xl border border-white/40 dark:border-white/10 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl rounded-3xl z-10">
         <CardHeader className="text-center space-y-4 pt-8 pb-4">
           {/* Logo / Brand */}
-          <div className="mx-auto w-24 h-24 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl flex items-center justify-center shadow-xl shadow-pink-500/10">
+          <div className="mx-auto w-28 h-28 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl flex items-center justify-center shadow-xl shadow-pink-500/10">
             {/* Animated Bolu Kukus Favicon */}
             <Image src="/icon.svg" alt="LegitBites Logo" width={80} height={80} className="object-contain drop-shadow-sm" />
           </div>

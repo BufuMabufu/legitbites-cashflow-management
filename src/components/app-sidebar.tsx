@@ -118,7 +118,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
       {/* --- Sidebar Header: Brand --- */}
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-pink-50 dark:bg-pink-950/30 border border-pink-100 dark:border-pink-900 rounded-xl flex items-center justify-center shadow-sm">
+          <div className="w-12 h-12 p-1.5 bg-pink-50 dark:bg-pink-950/30 border border-pink-100 dark:border-pink-900 rounded-[14px] flex items-center justify-center shadow-sm shrink-0">
             <Image src="/icon.svg" alt="Logo" width={32} height={32} className="object-contain" />
           </div>
           <div>
