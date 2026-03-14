@@ -13,7 +13,7 @@
 // - .env must have valid DATABASE_URL
 // =============================================================================
 
-import { PrismaClient } from "../src/generated/prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { createClient } from "@supabase/supabase-js";
 

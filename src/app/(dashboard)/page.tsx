@@ -80,57 +80,48 @@ async function getDashboardData(rangeParam: string) {
   ] = await Promise.all([
     prisma.transaction.aggregate({
       _sum: { amount: true },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      where: { type: "INCOME", date: { gte, lt }, deletedAt: null } as any,
+      where: { type: "INCOME", date: { gte, lt }, deletedAt: null },
     }),
     prisma.transaction.aggregate({
       _sum: { amount: true },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      where: { type: "EXPENSE", date: { gte, lt }, deletedAt: null } as any,
+      where: { type: "EXPENSE", date: { gte, lt }, deletedAt: null },
     }),
     prisma.transaction.aggregate({
       _sum: { amount: true },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      where: { type: "INCOME", deletedAt: null } as any
+      where: { type: "INCOME", deletedAt: null }
     }),
     prisma.transaction.aggregate({
       _sum: { amount: true },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      where: { type: "EXPENSE", deletedAt: null } as any
+      where: { type: "EXPENSE", deletedAt: null }
     }),
     prisma.transaction.groupBy({
       by: ["date"],
       _sum: { amount: true },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      where: { type: "INCOME", date: { gte: chartGte, lt }, deletedAt: null } as any,
+      where: { type: "INCOME", date: { gte: chartGte, lt }, deletedAt: null },
       orderBy: { date: "asc" }
     }),
     prisma.transaction.groupBy({
       by: ["date"],
       _sum: { amount: true },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      where: { type: "EXPENSE", date: { gte: chartGte, lt }, deletedAt: null } as any,
+      where: { type: "EXPENSE", date: { gte: chartGte, lt }, deletedAt: null },
       orderBy: { date: "asc" }
     }),
     // Top Expense Categories (Donut)
     prisma.transaction.groupBy({
       by: ["categoryId"],
       _sum: { amount: true },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      where: { type: "EXPENSE", date: { gte, lt }, deletedAt: null } as any,
+      where: { type: "EXPENSE", date: { gte, lt }, deletedAt: null },
       orderBy: { _sum: { amount: "desc" } }
     }),
     // Top Income Categories (Donut)
     prisma.transaction.groupBy({
       by: ["categoryId"],
       _sum: { amount: true },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      where: { type: "INCOME", date: { gte, lt }, deletedAt: null } as any,
+      where: { type: "INCOME", date: { gte, lt }, deletedAt: null },
       orderBy: { _sum: { amount: "desc" } }
     }),
     prisma.transaction.findMany({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      where: { date: { gte, lt }, deletedAt: null } as any,
+      where: { date: { gte, lt }, deletedAt: null },
       orderBy: { createdAt: "desc" },
       take: 5,
       include: { category: true }
@@ -212,8 +203,7 @@ async function getDashboardData(rangeParam: string) {
     ...topIncomeCategories.map(c => c.categoryId)
   ];
   const categoriesInfo = allCatIds.length > 0
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ? await prisma.category.findMany({ where: { id: { in: [...new Set(allCatIds)] }, deletedAt: null } } as any)
+    ? await prisma.category.findMany({ where: { id: { in: [...new Set(allCatIds)] }, deletedAt: null } })
     : [];
 
   if (topExpenseCategories.length > 0) {
@@ -398,15 +388,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
           {/* Recent Transactions Table */}
           <RecentTransactionsTable 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            transactions={recentTransactions.map((tx: any) => ({ 
+            transactions={recentTransactions.map((tx) => ({ 
               id: tx.id,
               type: tx.type,
               amount: Number(tx.amount),
               description: tx.description,
               date: tx.date,
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              category: { name: (tx as any).category.name }
+              category: { name: tx.category.name }
             }))} 
           />
 

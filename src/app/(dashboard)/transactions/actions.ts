@@ -9,7 +9,7 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@/generated/prisma/client";
+import { Prisma } from "@prisma/client";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
 /**
@@ -130,8 +130,7 @@ export async function deleteTransaction(formData: FormData) {
     const now = new Date();
     await prisma.transaction.update({
       where: { id: transactionId },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      data: { deletedAt: now } as any,
+      data: { deletedAt: now },
     });
 
     revalidatePath("/");
@@ -156,10 +155,8 @@ export async function deleteAllTransactions() {
   try {
     const now = new Date();
     await prisma.transaction.updateMany({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      where: { deletedAt: null } as any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      data: { deletedAt: now } as any,
+      where: { deletedAt: null },
+      data: { deletedAt: now },
     });
 
     revalidatePath("/");
@@ -185,10 +182,8 @@ export async function restoreTransactions(deletedAt: string) {
     // Allow a small margin (e.g. 1 second) for updateMany drift if any, 
     // though usually it's exact in the same call.
     await prisma.transaction.updateMany({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      where: { deletedAt: date } as any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      data: { deletedAt: null } as any,
+      where: { deletedAt: date },
+      data: { deletedAt: null },
     });
 
     revalidatePath("/");

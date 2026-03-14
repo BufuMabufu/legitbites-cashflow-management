@@ -11,7 +11,7 @@
 // connection string in DATABASE_URL.
 // =============================================================================
 
-import { PrismaClient } from "@/generated/prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
 // Extend the global object type to include our cached Prisma instance.

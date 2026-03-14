@@ -94,8 +94,7 @@ export async function deleteCategory(formData: FormData) {
     const now = new Date();
     await prisma.category.update({
       where: { id },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      data: { deletedAt: now } as any,
+      data: { deletedAt: now },
     });
 
     revalidatePath("/categories");
@@ -119,10 +118,8 @@ export async function deleteAllCategories() {
   try {
     const now = new Date();
     await prisma.category.updateMany({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      where: { deletedAt: null } as any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      data: { deletedAt: now } as any,
+      where: { deletedAt: null },
+      data: { deletedAt: now },
     });
 
     revalidatePath("/categories");
@@ -145,10 +142,8 @@ export async function restoreCategories(deletedAt: string) {
   try {
     const date = new Date(deletedAt);
     await prisma.category.updateMany({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      where: { deletedAt: date } as any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      data: { deletedAt: null } as any,
+      where: { deletedAt: date },
+      data: { deletedAt: null },
     });
 
     revalidatePath("/categories");

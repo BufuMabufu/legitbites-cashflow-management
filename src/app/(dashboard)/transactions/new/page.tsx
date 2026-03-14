@@ -9,8 +9,7 @@ import { NewTransactionForm } from "./new-transaction-form";
 
 export default async function NewTransactionPage() {
   const categories = await prisma.category.findMany({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    where: { deletedAt: null } as any,
+    where: { deletedAt: null },
     orderBy: { name: "asc" },
     select: { id: true, name: true, type: true },
   });
