@@ -74,10 +74,12 @@ model Category {
   type      TransactionType
   createdAt DateTime        @default(now()) @map("created_at")
   updatedAt DateTime        @updatedAt @map("updated_at")
+  deletedAt DateTime?       @map("deleted_at")
 
   // --- Relations ---
   transactions Transaction[]
 
+  @@index([deletedAt])
   @@map("categories")
 }
 
@@ -99,6 +101,7 @@ model Transaction {
   imageUrl    String?
   createdAt   DateTime        @default(now()) @map("created_at")
   updatedAt   DateTime        @updatedAt @map("updated_at")
+  deletedAt   DateTime?       @map("deleted_at")
 
   // --- Relations ---
   /// The category this transaction belongs to.
@@ -113,5 +116,6 @@ model Transaction {
   @@index([type])
   @@index([categoryId])
   @@index([userId])
+  @@index([deletedAt])
   @@map("transactions")
 }

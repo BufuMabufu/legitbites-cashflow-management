@@ -31,7 +31,9 @@ import {
 } from "@/components/ui/dialog";
 import { PlusCircle, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { createCategory, updateCategory, deleteCategory } from "./actions";
+import { createCategory, updateCategory, deleteCategory, deleteAllCategories, restoreCategories } from "./actions";
+import { Undo2 } from "lucide-react";
+import Swal from "sweetalert2";
 
 type Category = {
   id: string;
@@ -125,6 +127,7 @@ export function CategoryPageClient({ categories }: CategoryPageClientProps) {
   const [openAdd, setOpenAdd] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [lastDeletedAt, setLastDeletedAt] = useState<string | null>(null);
 
   const incomeCategories = categories.filter((c) => c.type === "INCOME");
   const expenseCategories = categories.filter((c) => c.type === "EXPENSE");
@@ -154,16 +157,96 @@ export function CategoryPageClient({ categories }: CategoryPageClientProps) {
   }
 
   async function handleDelete(id: string) {
-    startTransition(async () => {
-      const formData = new FormData();
-      formData.append("id", id);
-      const result = await deleteCategory(formData);
-      if (result.error) {
-        toast.error(result.error);
-      } else {
-        toast.success("Kategori berhasil dihapus!");
-      }
+    const result = await Swal.fire({
+      title: "Hapus Kategori?",
+      text: "Kategori akan dipindahkan ke tempat sampah sementara.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Ya, Hapus!",
+      cancelButtonText: "Batal",
     });
+
+    if (result.isConfirmed) {
+      startTransition(async () => {
+        const formData = new FormData();
+        formData.append("id", id);
+        const res = await deleteCategory(formData);
+        if (res.error) {
+          toast.error(res.error);
+        } else {
+          setLastDeletedAt(res.deletedAt || null);
+          toast.success("Kategori berhasil dihapus!", {
+            action: {
+              label: "Undo",
+              onClick: () => handleUndo(res.deletedAt!),
+            },
+          });
+        }
+      });
+    }
+  }
+
+  async function handleDeleteAll() {
+    const result = await Swal.fire({
+      title: "Hapus Semua Kategori?",
+      text: "Ketik 'ya saya yakin menghapus semua' untuk mengonfirmasi:",
+      input: "text",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Hapus Semua",
+      cancelButtonText: "Batal",
+      inputValidator: (value) => {
+        if (value !== "ya saya yakin menghapus semua") {
+          return "Konfirmasi tidak sesuai!";
+        }
+      },
+    });
+
+    if (result.isConfirmed) {
+      startTransition(async () => {
+        const res = await deleteAllCategories();
+        if (res.error) {
+          toast.error(res.error);
+        } else {
+          setLastDeletedAt(res.deletedAt || null);
+          toast.success("Semua kategori berhasil dihapus!", {
+            action: {
+              label: "Undo",
+              onClick: () => handleUndo(res.deletedAt!),
+            },
+          });
+        }
+      });
+    }
+  }
+
+  async function handleUndo(timestamp: string) {
+    const result = await Swal.fire({
+      title: "Batalkan Penghapusan?",
+      text: "Kategori yang dihapus akan dikembalikan.",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#10b981",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Ya, Kembalikan!",
+      cancelButtonText: "Batal",
+    });
+
+    if (result.isConfirmed) {
+      startTransition(async () => {
+        const res = await restoreCategories(timestamp);
+        if (res.error) {
+          toast.error(res.error);
+        } else {
+          setLastDeletedAt(null);
+          toast.success("Berhasil memulihkan kategori.");
+        }
+      });
+    }
   }
 
   return (
@@ -177,12 +260,35 @@ export function CategoryPageClient({ categories }: CategoryPageClientProps) {
           </p>
         </div>
 
-        {/* Add Category Dialog */}
-        <Dialog open={openAdd} onOpenChange={setOpenAdd}>
-          <DialogTrigger className="inline-flex items-center h-12 px-5 text-base font-medium rounded-xl bg-linear-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 shadow-lg text-white cursor-pointer transition-colors">
-              <PlusCircle className="w-5 h-5 mr-2" />
-              Tambah Kategori
-          </DialogTrigger>
+        <div className="flex gap-3">
+          {/* Undo Button */}
+          {lastDeletedAt && (
+            <Button
+              variant="outline"
+              onClick={() => handleUndo(lastDeletedAt)}
+              className="h-12 px-5 border-amber-500 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950 rounded-xl"
+            >
+              <Undo2 className="w-5 h-5 mr-2" />
+              Undo
+            </Button>
+          )}
+
+          {/* Delete All Button */}
+          <Button
+            variant="outline"
+            onClick={handleDeleteAll}
+            className="h-12 px-5 border-red-500 text-red-600 hover:bg-red-50 dark:hover:bg-red-950 rounded-xl"
+          >
+            <Trash2 className="w-5 h-5 mr-2" />
+            Hapus Semua
+          </Button>
+
+          {/* Add Category Dialog */}
+          <Dialog open={openAdd} onOpenChange={setOpenAdd}>
+            <DialogTrigger className="inline-flex items-center h-12 px-5 text-base font-medium rounded-xl bg-linear-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 shadow-lg text-white cursor-pointer transition-colors">
+                <PlusCircle className="w-5 h-5 mr-2" />
+                Tambah Kategori
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Tambah Kategori Baru</DialogTitle>
@@ -226,6 +332,7 @@ export function CategoryPageClient({ categories }: CategoryPageClientProps) {
           </DialogContent>
         </Dialog>
       </div>
+    </div>
 
       {/* Category Lists */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

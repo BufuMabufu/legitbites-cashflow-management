@@ -10,6 +10,8 @@ import { CategoryPageClient } from "./category-page-client";
 
 export default async function CategoriesPage() {
   const categories = await prisma.category.findMany({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    where: { deletedAt: null } as any,
     orderBy: { name: "asc" },
     select: { id: true, name: true, type: true },
   });

@@ -21,9 +21,10 @@ export default async function EditTransactionPage({ params }: { params: Promise<
   // Run queries in parallel for efficiency
   const [transaction, categories] = await Promise.all([
     prisma.transaction.findUnique({
-      where: { id },
+      where: { id, deletedAt: null } as any,
     }),
     prisma.category.findMany({
+      where: { deletedAt: null } as any,
       orderBy: { name: "asc" },
       select: { id: true, name: true, type: true },
     })

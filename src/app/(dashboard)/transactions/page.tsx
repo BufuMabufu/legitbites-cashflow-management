@@ -27,7 +27,7 @@ export default async function TransactionsPage() {
   if (!user) return null;
 
   // RBAC: STAFF and OWNER can see all transactions
-  const whereClause = {};
+  const whereClause: any = { deletedAt: null };
 
   const transactions = await prisma.transaction.findMany({
     where: whereClause,

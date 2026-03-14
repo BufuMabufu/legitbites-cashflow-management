@@ -112,7 +112,7 @@ export async function createTransaction(formData: FormData) {
 }
 
 /**
- * Deletes a transaction.
+ * Deletes a transaction (Soft Delete).
  * Only the OWNER role is authorized to perform this action.
  */
 export async function deleteTransaction(formData: FormData) {
@@ -127,16 +127,76 @@ export async function deleteTransaction(formData: FormData) {
   }
 
   try {
-    await prisma.transaction.delete({
+    const now = new Date();
+    await prisma.transaction.update({
       where: { id: transactionId },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data: { deletedAt: now } as any,
+    });
+
+    revalidatePath("/");
+    revalidatePath("/transactions");
+    return { success: true, deletedAt: now.toISOString() };
+  } catch (error) {
+    console.error("Failed to delete transaction:", error);
+    return { error: "Gagal menghapus transaksi." };
+  }
+}
+
+/**
+ * Deletes all transactions (Soft Delete).
+ * Only the OWNER role is authorized.
+ */
+export async function deleteAllTransactions() {
+  const user = await getCurrentUser();
+  if (!user || user.role !== "OWNER") {
+    return { error: "Anda tidak memiliki akses untuk menghapus semua transaksi." };
+  }
+
+  try {
+    const now = new Date();
+    await prisma.transaction.updateMany({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      where: { deletedAt: null } as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data: { deletedAt: now } as any,
+    });
+
+    revalidatePath("/");
+    revalidatePath("/transactions");
+    return { success: true, deletedAt: now.toISOString() };
+  } catch (error) {
+    console.error("Failed to delete all transactions:", error);
+    return { error: "Gagal menghapus semua transaksi." };
+  }
+}
+
+/**
+ * Restores transactions deleted at a specific time (Undo).
+ */
+export async function restoreTransactions(deletedAt: string) {
+  const user = await getCurrentUser();
+  if (!user || user.role !== "OWNER") {
+    return { error: "Anda tidak memiliki akses untuk memulihkan transaksi." };
+  }
+
+  try {
+    const date = new Date(deletedAt);
+    // Allow a small margin (e.g. 1 second) for updateMany drift if any, 
+    // though usually it's exact in the same call.
+    await prisma.transaction.updateMany({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      where: { deletedAt: date } as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data: { deletedAt: null } as any,
     });
 
     revalidatePath("/");
     revalidatePath("/transactions");
     return { success: true };
   } catch (error) {
-    console.error("Failed to delete transaction:", error);
-    return { error: "Gagal menghapus transaksi." };
+    console.error("Failed to restore transactions:", error);
+    return { error: "Gagal membatalkan penghapusan." };
   }
 }
 

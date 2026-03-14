@@ -8,7 +8,8 @@ import { DateRange } from "react-day-picker";
 import Link from "next/link";
 import Swal from "sweetalert2";
 import { toast } from "sonner";
-import { deleteTransaction } from "./actions";
+import { deleteTransaction, deleteAllTransactions, restoreTransactions } from "./actions";
+import { Undo2 } from "lucide-react";
 
 import {
   Table,
@@ -67,6 +68,7 @@ export function TransactionDataTable({ transactions: initialTransactions, userRo
   const [searchQuery, setSearchQuery] = useState("");
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [isPending, startTransition] = useTransition();
+  const [lastDeletedAt, setLastDeletedAt] = useState<string | null>(null);
 
   // Handle client-side filtering
   const filteredTransactions = initialTransactions.filter((tx) => {
@@ -100,7 +102,7 @@ export function TransactionDataTable({ transactions: initialTransactions, userRo
   const handleDelete = async (id: string) => {
     const result = await Swal.fire({
       title: "Hapus Transaksi?",
-      text: "Data yang dihapus tidak dapat dikembalikan.",
+      text: "Data akan dipindahkan ke tempat sampah sementara.",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#ef4444",
@@ -118,7 +120,74 @@ export function TransactionDataTable({ transactions: initialTransactions, userRo
         if (res?.error) {
           toast.error(res.error);
         } else if (res?.success) {
-          toast.success("Transaksi berhasil dihapus.");
+          setLastDeletedAt(res.deletedAt || null);
+          toast.success("Transaksi berhasil dihapus.", {
+            action: {
+              label: "Undo",
+              onClick: () => handleUndo(res.deletedAt!),
+            },
+          });
+        }
+      });
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    const result = await Swal.fire({
+      title: "Hapus Semua Data?",
+      text: "Ketik 'ya saya yakin menghapus semua' untuk mengonfirmasi:",
+      input: "text",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Hapus Semua",
+      cancelButtonText: "Batal",
+      inputValidator: (value) => {
+        if (value !== "ya saya yakin menghapus semua") {
+          return "Konfirmasi tidak sesuai!";
+        }
+      },
+    });
+
+    if (result.isConfirmed) {
+      startTransition(async () => {
+        const res = await deleteAllTransactions();
+        if (res?.error) {
+          toast.error(res.error);
+        } else if (res?.success) {
+          setLastDeletedAt(res.deletedAt || null);
+          toast.success("Semua transaksi berhasil dihapus.", {
+            action: {
+              label: "Undo",
+              onClick: () => handleUndo(res.deletedAt!),
+            },
+          });
+        }
+      });
+    }
+  };
+
+  const handleUndo = async (timestamp: string) => {
+    const result = await Swal.fire({
+      title: "Batalkan Penghapusan?",
+      text: "Data yang dihapus akan dikembalikan.",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#10b981",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Ya, Kembalikan!",
+      cancelButtonText: "Batal",
+    });
+
+    if (result.isConfirmed) {
+      startTransition(async () => {
+        const res = await restoreTransactions(timestamp);
+        if (res?.error) {
+          toast.error(res.error);
+        } else if (res?.success) {
+          setLastDeletedAt(null);
+          toast.success("Berhasil memulihkan data.");
         }
       });
     }
@@ -217,15 +286,42 @@ export function TransactionDataTable({ transactions: initialTransactions, userRo
           </Popover>
         </div>
 
-        {/* Export Button */}
-        <Button 
-          variant="outline" 
-          onClick={handleExportCSV}
-          className="h-11 border-emerald-500 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950 w-full sm:w-auto whitespace-nowrap"
-        >
-          <Download className="mr-2 h-4 w-4" />
-          Export ke CSV
-        </Button>
+        {/* Actions Row */}
+        <div className="flex flex-wrap gap-3 w-full sm:w-auto">
+          {/* Undo Button */}
+          {lastDeletedAt && (
+            <Button
+              variant="outline"
+              onClick={() => handleUndo(lastDeletedAt)}
+              className="h-11 border-amber-500 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950 w-full sm:w-auto"
+            >
+              <Undo2 className="mr-2 h-4 w-4" />
+              Urungkan (Undo)
+            </Button>
+          )}
+
+          {/* Delete All Button */}
+          {userRole === "OWNER" && (
+            <Button
+              variant="outline"
+              onClick={handleDeleteAll}
+              className="h-11 border-red-500 text-red-600 hover:bg-red-50 dark:hover:bg-red-950 w-full sm:w-auto"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Hapus Semua Data
+            </Button>
+          )}
+
+          {/* Export Button */}
+          <Button 
+            variant="outline" 
+            onClick={handleExportCSV}
+            className="h-11 border-emerald-500 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950 w-full sm:w-auto whitespace-nowrap"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Export ke CSV
+          </Button>
+        </div>
       </div>
 
       {/* The Data Table */}

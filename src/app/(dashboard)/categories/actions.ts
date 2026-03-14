@@ -78,13 +78,8 @@ export async function updateCategory(formData: FormData) {
 }
 
 /**
- * Deletes a category. Only OWNER can perform this action.
- *
- * WHY check for related transactions before deleting?
- * If a category has transactions linked to it, deleting would either:
- * - Fail with a foreign key error (if DB enforces it), or
- * - Orphan the transactions (bad data integrity)
- * So we reject the delete and tell the user why.
+ * Deletes a category (Soft Delete).
+ * Only the OWNER role is authorized to perform this action.
  */
 export async function deleteCategory(formData: FormData) {
   const user = await getCurrentUser();
@@ -95,18 +90,71 @@ export async function deleteCategory(formData: FormData) {
   const id = formData.get("id") as string;
   if (!id) return { error: "ID kategori tidak valid." };
 
-  // Check if category has linked transactions
-  const transactionCount = await prisma.transaction.count({
-    where: { categoryId: id },
-  });
+  try {
+    const now = new Date();
+    await prisma.category.update({
+      where: { id },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data: { deletedAt: now } as any,
+    });
 
-  if (transactionCount > 0) {
-    return {
-      error: `Kategori ini memiliki ${transactionCount} transaksi terkait dan tidak bisa dihapus.`,
-    };
+    revalidatePath("/categories");
+    return { success: true, deletedAt: now.toISOString() };
+  } catch (error) {
+    console.error("Failed to delete category:", error);
+    return { error: "Gagal menghapus kategori." };
+  }
+}
+
+/**
+ * Deletes all categories (Soft Delete).
+ * Only the OWNER role is authorized.
+ */
+export async function deleteAllCategories() {
+  const user = await getCurrentUser();
+  if (!user || user.role !== "OWNER") {
+    return { error: "Anda tidak memiliki akses untuk menghapus semua kategori." };
   }
 
-  await prisma.category.delete({ where: { id } });
-  revalidatePath("/categories");
-  return { success: true };
+  try {
+    const now = new Date();
+    await prisma.category.updateMany({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      where: { deletedAt: null } as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data: { deletedAt: now } as any,
+    });
+
+    revalidatePath("/categories");
+    return { success: true, deletedAt: now.toISOString() };
+  } catch (error) {
+    console.error("Failed to delete all categories:", error);
+    return { error: "Gagal menghapus semua kategori." };
+  }
+}
+
+/**
+ * Restores categories deleted at a specific time (Undo).
+ */
+export async function restoreCategories(deletedAt: string) {
+  const user = await getCurrentUser();
+  if (!user || user.role !== "OWNER") {
+    return { error: "Anda tidak memiliki akses untuk memulihkan kategori." };
+  }
+
+  try {
+    const date = new Date(deletedAt);
+    await prisma.category.updateMany({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      where: { deletedAt: date } as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data: { deletedAt: null } as any,
+    });
+
+    revalidatePath("/categories");
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to restore categories:", error);
+    return { error: "Gagal membatalkan penghapusan." };
+  }
 }
