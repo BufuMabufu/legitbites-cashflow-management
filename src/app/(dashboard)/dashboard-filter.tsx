@@ -10,6 +10,14 @@ import {
 } from "@/components/ui/select";
 import { CalendarRange } from "lucide-react";
 
+/** Maps URL param values to Indonesian labels */
+const RANGE_LABELS: Record<string, string> = {
+  today: "Hari Ini",
+  "7d": "7 Hari Terakhir",
+  this_month: "Bulan Ini",
+  this_year: "Tahun Ini",
+};
+
 export function DashboardFilter() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -27,8 +35,10 @@ export function DashboardFilter() {
     <div className="flex items-center gap-2">
       <CalendarRange className="h-5 w-5 text-muted-foreground hidden sm:block" />
       <Select value={currentRange} onValueChange={handleRangeChange}>
-        <SelectTrigger className="w-[180px] h-12 text-base md:text-lg font-medium rounded-xl border-indigo-200 bg-white dark:bg-slate-950 dark:border-indigo-900 shadow-sm focus:ring-indigo-500">
-          <SelectValue placeholder="Pilih Rentang Waktu" />
+        <SelectTrigger className="w-[200px] h-12 text-base md:text-lg font-medium rounded-xl border-indigo-200 bg-white dark:bg-slate-950 dark:border-indigo-900 shadow-sm focus:ring-indigo-500">
+          <SelectValue placeholder="Pilih Rentang Waktu">
+            {RANGE_LABELS[currentRange] || currentRange}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent className="rounded-xl">
           <SelectItem value="today" className="text-base py-3">Hari Ini</SelectItem>
