@@ -34,7 +34,10 @@ function getDateRange(rangeParam: string): { gte: Date; lt: Date; label: string 
   const lt = tomorrowUTC;
   let label = "Hari Ini";
 
-  if (rangeParam === "7d") {
+  if (rangeParam === "all") {
+    gte = new Date(2000, 0, 1); // effectively all-time
+    label = "Semua Waktu";
+  } else if (rangeParam === "7d") {
     gte = new Date(todayUTC);
     gte.setDate(gte.getDate() - 6);
     label = "7 Hari Terakhir";

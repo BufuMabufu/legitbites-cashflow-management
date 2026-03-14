@@ -51,6 +51,7 @@ export function NewTransactionForm({ categories }: NewTransactionFormProps) {
   const [displayAmount, setDisplayAmount] = useState("");
   const [rawAmount, setRawAmount] = useState("");
   const [fileName, setFileName] = useState<string | null>(null);
+  const [categoryId, setCategoryId] = useState<string>("");
   const [isPending, startTransition] = useTransition();
 
   // Filter categories based on selected transaction type
@@ -168,11 +169,17 @@ export function NewTransactionForm({ categories }: NewTransactionFormProps) {
               <Label htmlFor="categoryId" className="text-base md:text-lg font-bold">
                 Kategori
               </Label>
-              <Select name="categoryId" required>
+              <input type="hidden" name="categoryId" value={categoryId} />
+              <Select value={categoryId || undefined} onValueChange={(v) => setCategoryId(v || "")} required>
                 <SelectTrigger className="w-full h-12 md:h-14 text-base md:text-lg rounded-xl">
-                  <SelectValue placeholder="Pilih kategori" />
+                  <SelectValue placeholder="Pilih kategori">
+                    {categoryId
+                      ? (categories.find(c => c.id === categoryId)?.name || "Pilih kategori")
+                      : undefined
+                    }
+                  </SelectValue>
                 </SelectTrigger>
-                <SelectContent className="min-w-[var(--radix-select-trigger-width)]">
+                <SelectContent>
                   {filteredCategories.length === 0 ? (
                     <SelectItem value="__empty" disabled className="text-base">
                       Belum ada kategori {type === "INCOME" ? "pemasukan" : "pengeluaran"}

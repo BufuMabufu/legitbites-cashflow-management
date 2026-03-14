@@ -12,6 +12,7 @@ import { CalendarRange } from "lucide-react";
 
 /** Maps URL param values to Indonesian labels */
 const RANGE_LABELS: Record<string, string> = {
+  all: "Semua Waktu",
   today: "Hari Ini",
   "7d": "7 Hari Terakhir",
   this_month: "Bulan Ini",
@@ -41,6 +42,7 @@ export function DashboardFilter() {
           </SelectValue>
         </SelectTrigger>
         <SelectContent className="rounded-xl">
+          <SelectItem value="all" className="text-base py-3">Semua Waktu</SelectItem>
           <SelectItem value="today" className="text-base py-3">Hari Ini</SelectItem>
           <SelectItem value="7d" className="text-base py-3">7 Hari Terakhir</SelectItem>
           <SelectItem value="this_month" className="text-base py-3">Bulan Ini</SelectItem>
