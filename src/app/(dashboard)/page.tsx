@@ -234,9 +234,10 @@ function formatRupiah(amount: number): string {
   }).format(amount);
 }
 
-export default async function DashboardPage({ searchParams }: { searchParams: { range?: string } }) {
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ range?: string }> }) {
   const user = await getCurrentUser();
-  const rangeParam = searchParams.range || "this_month";
+  const params = await searchParams;
+  const rangeParam = params.range || "this_month";
 
   const { 
     currentIncome, 
