@@ -298,9 +298,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const chartLabel = rangeParam === "today" ? "7 Hari Terakhir" : rangeLabel;
 
   return (
-    <div className="space-y-6 md:space-y-8">
-      {/* Header: Greeting & Filter */}
-      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+    <div className="flex flex-col gap-6 md:gap-8">
+      {/* Header: Greeting & Filter (Sticky) */}
+      <div className="sticky top-0 z-30 -mx-4 -mt-4 p-4 lg:-mx-6 lg:-mt-6 lg:p-6 bg-background/95 backdrop-blur-md flex flex-col md:flex-row md:items-start justify-between gap-4 border-b border-slate-200/50 dark:border-slate-800/50 shadow-xs">
         <div>
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
             Halo, {user?.name} 👋

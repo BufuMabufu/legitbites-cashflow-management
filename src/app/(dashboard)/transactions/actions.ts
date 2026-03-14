@@ -138,3 +138,102 @@ export async function deleteTransaction(formData: FormData) {
     return { error: "Gagal menghapus transaksi." };
   }
 }
+
+/**
+ * Updates an existing transaction.
+ * Only the OWNER role is authorized to perform this action to avoid staff tampering.
+ */
+export async function updateTransaction(id: string, formData: FormData) {
+  const user = await getCurrentUser();
+  if (!user || user.role !== "OWNER") {
+    return { error: "Anda tidak memiliki akses untuk mengubah transaksi." };
+  }
+
+  const amountStr = formData.get("amount") as string;
+  const type = formData.get("type") as string;
+  const categoryId = formData.get("categoryId") as string;
+  const dateStr = formData.get("date") as string;
+  const description = (formData.get("description") as string)?.trim() || null;
+
+  // --- Validation ---
+  if (!amountStr || isNaN(Number(amountStr)) || Number(amountStr) <= 0) {
+    return { error: "Jumlah harus berupa angka lebih dari 0." };
+  }
+  if (type !== "INCOME" && type !== "EXPENSE") {
+    return { error: "Tipe transaksi tidak valid." };
+  }
+  if (!categoryId) {
+    return { error: "Kategori wajib dipilih." };
+  }
+  if (!dateStr) {
+    return { error: "Tanggal wajib diisi." };
+  }
+
+  const category = await prisma.category.findUnique({
+    where: { id: categoryId },
+    select: { type: true },
+  });
+
+  if (!category) {
+    return { error: "Kategori tidak ditemukan." };
+  }
+  if (category.type !== type) {
+    return { error: "Kategori tidak sesuai dengan tipe transaksi." };
+  }
+
+  const amount = parseFloat(amountStr);
+  const date = new Date(dateStr);
+  let imageUrl: string | undefined = undefined;
+
+  const receiptFile = formData.get("receipt") as File | null;
+  if (receiptFile && receiptFile.size > 0) {
+    const supabaseAdmin = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    const fileExt = receiptFile.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+    const filePath = `${user.id}/${fileName}`;
+    
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from('receipts')
+      .upload(filePath, receiptFile);
+      
+    if (uploadError) {
+      console.error("Storage upload error:", uploadError);
+      return { error: "Gagal mengunggah foto bukti." };
+    }
+    
+    const { data: publicUrlData } = supabaseAdmin.storage
+      .from('receipts')
+      .getPublicUrl(filePath);
+      
+    imageUrl = publicUrlData.publicUrl;
+  }
+
+  try {
+    const dataToUpdate: any = {
+      amount,
+      type: type as "INCOME" | "EXPENSE",
+      date,
+      description,
+      categoryId,
+    };
+
+    if (imageUrl) {
+      dataToUpdate.imageUrl = imageUrl;
+    }
+
+    await prisma.transaction.update({
+      where: { id },
+      data: dataToUpdate,
+    });
+
+    revalidatePath("/");
+    revalidatePath("/transactions");
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to update transaction:", error);
+    return { error: "Gagal mengubah transaksi." };
+  }
+}

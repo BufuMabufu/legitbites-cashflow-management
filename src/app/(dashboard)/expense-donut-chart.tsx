@@ -97,11 +97,8 @@ export function ExpenseDonutChart({ data, totalExpense }: ExpenseDonutChartProps
             {/* Center Label inside Donut */}
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none mt-[-36px]">
               <span className="text-xs font-semibold text-muted-foreground uppercase opacity-80">Total</span>
-              <span className="text-lg md:text-xl font-bold text-rose-600 truncate px-4 max-w-[150px]">
-                {new Intl.NumberFormat("id-ID", {
-                  notation: "compact", // formats like 1.2M, 15K, etc
-                  compactDisplay: "short"
-                }).format(totalExpense)}
+              <span className="text-base md:text-lg font-bold text-rose-600 px-2 w-full text-center truncate">
+                {formatRupiah(totalExpense)}
               </span>
             </div>
           </div>

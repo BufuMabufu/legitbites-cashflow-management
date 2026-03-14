@@ -3,8 +3,9 @@
 import { useState, useTransition } from "react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import { Calendar as CalendarIcon, Download, Search, Trash2, FileImage } from "lucide-react";
+import { Calendar as CalendarIcon, Download, Search, Trash2, FileImage, Pencil } from "lucide-react";
 import { DateRange } from "react-day-picker";
+import Link from "next/link";
 import Swal from "sweetalert2";
 import { toast } from "sonner";
 import { deleteTransaction } from "./actions";
@@ -18,7 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -309,16 +310,28 @@ export function TransactionDataTable({ transactions: initialTransactions, userRo
                         )}
                         
                         {userRole === "OWNER" && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(tx.id)}
-                            disabled={isPending}
-                            className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                            title="Hapus"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            <Link 
+                              href={`/transactions/${tx.id}/edit`}
+                              className={cn(
+                                buttonVariants({ variant: "ghost", size: "icon" }),
+                                "h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-100/50"
+                              )}
+                              title="Edit"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Link>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDelete(tx.id)}
+                              disabled={isPending}
+                              className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                              title="Hapus"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         )}
                       </div>
                     </TableCell>
