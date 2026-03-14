@@ -9,6 +9,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -117,8 +118,8 @@ export function AppSidebar({ user }: AppSidebarProps) {
       {/* --- Sidebar Header: Brand --- */}
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-linear-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-md">
-            <span className="text-xl">🍽️</span>
+          <div className="w-10 h-10 bg-pink-50 dark:bg-pink-950/30 border border-pink-100 dark:border-pink-900 rounded-xl flex items-center justify-center shadow-sm">
+            <Image src="/icon.svg" alt="Logo" width={32} height={32} className="object-contain" />
           </div>
           <div>
             <h1 className="font-bold text-lg leading-tight">LegitBites</h1>
