@@ -179,11 +179,9 @@ export function CategoryPageClient({ categories }: CategoryPageClientProps) {
 
         {/* Add Category Dialog */}
         <Dialog open={openAdd} onOpenChange={setOpenAdd}>
-          <DialogTrigger>
-            <Button className="h-12 px-5 text-base rounded-xl bg-linear-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 shadow-lg">
+          <DialogTrigger className="inline-flex items-center h-12 px-5 text-base font-medium rounded-xl bg-linear-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 shadow-lg text-white cursor-pointer transition-colors">
               <PlusCircle className="w-5 h-5 mr-2" />
               Tambah Kategori
-            </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
