@@ -138,8 +138,11 @@ export function AppSidebar({ user }: AppSidebarProps) {
             <SidebarMenu>
               {visibleItems.map((item) => {
                 const isActive =
-                  pathname === item.href ||
-                  (item.href !== "/" && pathname.startsWith(item.href));
+                  item.href === "/"
+                    ? pathname === "/"
+                    : item.href === "/transactions"
+                      ? pathname === "/transactions"
+                      : pathname.startsWith(item.href);
 
                 return (
                   <SidebarMenuItem key={item.href}>
