@@ -18,6 +18,7 @@ import { ExpenseChart } from "./expense-chart";
 import { DashboardFilter } from "./dashboard-filter";
 import { ExpenseDonutChart } from "./expense-donut-chart";
 import { RecentTransactionsTable } from "./recent-transactions-table";
+import { IncomeDonutChart } from "./income-donut-chart";
 
 /**
  * Helper to determine date range based on the query parameter
@@ -62,31 +63,25 @@ async function getDashboardData(rangeParam: string) {
     rangeIncomeTransactions,
     rangeExpenseTransactions,
     topExpenseCategories,
+    topIncomeCategories,
     recentTransactions
   ] = await Promise.all([
-    // Income in chosen range
     prisma.transaction.aggregate({
       _sum: { amount: true },
       where: { type: "INCOME", date: { gte, lt } },
     }),
-    // Expense in chosen range
     prisma.transaction.aggregate({
       _sum: { amount: true },
       where: { type: "EXPENSE", date: { gte, lt } },
     }),
-    // ALL TIME Income (Do not filter, required for safe balance)
     prisma.transaction.aggregate({
       _sum: { amount: true },
       where: { type: "INCOME" }
     }),
-    // ALL TIME Expense
     prisma.transaction.aggregate({
       _sum: { amount: true },
       where: { type: "EXPENSE" }
     }),
-    // Income groupBy for linear chart (Always last 7 days regardless of range for chart consistency, OR adapt to range?
-    // Let's adapt chart to last 7 days so it stays readable, or adapt to the range? The prompt didn't say to change the line charts. 
-    // We'll keep line charts fixed to 7 days for now or let them react to the range to be safer.
     prisma.transaction.groupBy({
       by: ["date"],
       _sum: { amount: true },
@@ -106,7 +101,13 @@ async function getDashboardData(rangeParam: string) {
       where: { type: "EXPENSE", date: { gte, lt } },
       orderBy: { _sum: { amount: "desc" } }
     }),
-    // Recent 5 Transactions
+    // Top Income Categories (Donut)
+    prisma.transaction.groupBy({
+      by: ["categoryId"],
+      _sum: { amount: true },
+      where: { type: "INCOME", date: { gte, lt } },
+      orderBy: { _sum: { amount: "desc" } }
+    }),
     prisma.transaction.findMany({
       where: { date: { gte, lt } },
       orderBy: { createdAt: "desc" },
@@ -153,25 +154,43 @@ async function getDashboardData(rangeParam: string) {
   const chartDataIncome = Array.from(chartDataIncomeMap.entries()).map(([date, income]) => ({ date, income }));
   const chartDataExpense = Array.from(chartDataExpenseMap.entries()).map(([date, expense]) => ({ date, expense }));
 
-  // Build Donut Chart Data
-  // Need to fetch category names for the IDs
+  // Build Donut Chart Data for Expenses
   const donutData: { name: string; value: number; color: string }[] = [];
-  const palette = ["#f43f5e", "#fb923c", "#facc15", "#c084fc", "#60a5fa"];
+  const expensePalette = ["#f43f5e", "#fb923c", "#facc15", "#c084fc", "#60a5fa"];
   let topCategoryName = "belum ada data";
 
-  if (topExpenseCategories.length > 0) {
-    const categoriesInfo = await prisma.category.findMany({
-      where: { id: { in: topExpenseCategories.map(c => c.categoryId) } }
-    });
+  // Build Donut Chart Data for Income
+  const incomeDonutData: { name: string; value: number; color: string }[] = [];
+  const incomePalette = ["#10b981", "#14b8a6", "#06b6d4", "#8b5cf6", "#f59e0b"];
 
+  // Collect all category IDs we need
+  const allCatIds = [
+    ...topExpenseCategories.map(c => c.categoryId),
+    ...topIncomeCategories.map(c => c.categoryId)
+  ];
+  const categoriesInfo = allCatIds.length > 0
+    ? await prisma.category.findMany({ where: { id: { in: [...new Set(allCatIds)] } } })
+    : [];
+
+  if (topExpenseCategories.length > 0) {
     topExpenseCategories.forEach((group, index) => {
       const cat = categoriesInfo.find(c => c.id === group.categoryId);
       if (index === 0 && cat) topCategoryName = cat.name;
-      
       donutData.push({
         name: cat ? cat.name : "Lainnya",
         value: Number(group._sum.amount ?? 0),
-        color: palette[Math.min(index, palette.length - 1)] // cycle colors
+        color: expensePalette[Math.min(index, expensePalette.length - 1)]
+      });
+    });
+  }
+
+  if (topIncomeCategories.length > 0) {
+    topIncomeCategories.forEach((group, index) => {
+      const cat = categoriesInfo.find(c => c.id === group.categoryId);
+      incomeDonutData.push({
+        name: cat ? cat.name : "Lainnya",
+        value: Number(group._sum.amount ?? 0),
+        color: incomePalette[Math.min(index, incomePalette.length - 1)]
       });
     });
   }
@@ -199,6 +218,7 @@ async function getDashboardData(rangeParam: string) {
     chartDataIncome, 
     chartDataExpense,
     donutData,
+    incomeDonutData,
     recentTransactions,
     rangeLabel,
     insightMessage
@@ -225,6 +245,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
     chartDataIncome, 
     chartDataExpense,
     donutData,
+    incomeDonutData,
     recentTransactions,
     rangeLabel,
     insightMessage
@@ -350,8 +371,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
           </div>
         </div>
 
-        {/* Right Sidebar on Desktop: Donut Chart */}
+        {/* Right Sidebar on Desktop: Donut Charts */}
         <div className="space-y-4 md:space-y-6">
+          <IncomeDonutChart data={incomeDonutData} totalIncome={currentIncome} />
           <ExpenseDonutChart data={donutData} totalExpense={currentExpense} />
         </div>
       </div>
