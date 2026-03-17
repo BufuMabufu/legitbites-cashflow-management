@@ -13,7 +13,7 @@
 // - .env must have valid DATABASE_URL
 // =============================================================================
 
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Role } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { createClient } from "@supabase/supabase-js";
 
@@ -59,26 +59,25 @@ const DEFAULT_USERS = [
     email: "hani@legitbites.com",
     password: "admin123",
     name: "Hani",
-    role: "OWNER" as const,
+    role: Role.OWNER,
   },
   {
     email: "caca@legitbites.com",
     password: "staf123",
     name: "Caca",
-    role: "STAFF" as const,
+    role: Role.STAFF,
   },
   {
     email: "fardan@legitbites.com",
     password: "staf123",
     name: "Fardan",
-    role: "STAFF" as const,
+    role: Role.STAFF,
   },
   {
     email: "revan@legitbites.com",
     password: "admin123",
     name: "Revan Admin",
-    // @ts-expect-error adding ADMIN role which is present in DB
-    role: "ADMIN",
+    role: Role.ADMIN,
   },
 ];
 
@@ -114,7 +113,7 @@ async function main() {
 
     if (authError || !authData.user?.id) {
       // If user already exists, fetch their ID instead
-      if (authError.message.includes("already been registered")) {
+      if (authError?.message?.includes("already been registered")) {
         console.log(`  ⏭️  ${userData.name} (${userData.email}) — sudah ada di Auth`);
 
         // Try to find existing auth user by email
@@ -140,7 +139,7 @@ async function main() {
         continue;
       }
 
-      console.error(`  ❌ Gagal buat ${userData.name}:`, authError.message);
+      console.error(`  ❌ Gagal buat ${userData.name}:`, authError?.message || "User ID not returned");
       continue;
     }
 
