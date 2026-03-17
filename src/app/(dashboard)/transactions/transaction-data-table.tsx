@@ -134,7 +134,32 @@ export function TransactionDataTable({
   // Handle date range change
   const handleDateSelect = (range: DateRange | undefined) => {
     setDateRange(range);
-    // The useEffect will handle the URL update
+  };
+
+  // Local state for pagination input to improve UX (no jumpy typing)
+  const [pageInput, setPageInput] = useState(currentPage.toString());
+
+  // Sync local input with actual page from URL when it changes
+  useEffect(() => {
+    setPageInput(currentPage.toString());
+  }, [currentPage]);
+
+  const handlePageJump = (e: React.KeyboardEvent<HTMLInputElement> | React.FocusEvent<HTMLInputElement>) => {
+    // If it's a keyboard event, only trigger on Enter
+    if ("key" in e && e.key !== "Enter") return;
+
+    const newPage = parseInt(pageInput);
+    if (isNaN(newPage) || newPage < 1) {
+      setPageInput(currentPage.toString());
+      return;
+    }
+
+    const validatedPage = Math.min(newPage, totalPages || 1);
+    if (validatedPage !== currentPage) {
+      handlePageChange(validatedPage);
+    } else {
+      setPageInput(validatedPage.toString());
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -495,8 +520,16 @@ export function TransactionDataTable({
             <ChevronLeft className="h-4 w-4" />
             Sebelumnya
           </Button>
-          <div className="bg-muted px-3 h-9 flex items-center justify-center rounded-md text-sm font-medium min-w-12">
-            {currentPage} / {totalPages || 1}
+          <div className="flex items-center gap-2 bg-muted px-2 h-9 rounded-md min-w-24">
+            <Input
+              type="text"
+              value={pageInput}
+              onChange={(e) => setPageInput(e.target.value)}
+              onKeyDown={handlePageJump}
+              onBlur={handlePageJump}
+              className="h-6 w-10 p-0 text-center bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-sm font-medium"
+            />
+            <span className="text-muted-foreground text-xs">/ {totalPages || 1}</span>
           </div>
           <Button
             variant="outline"
