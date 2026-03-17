@@ -5,9 +5,10 @@
 // Uses PostgreSQL (via Supabase) as the underlying database.
 //
 // RBAC Strategy:
-// - `Role` enum with two values: OWNER and STAFF
+// - `Role` enum with three values: OWNER, STAFF, and ADMIN
 // - OWNER: Full access — reports, master data, and transaction management
 // - STAFF: Limited access — can only create daily transactions
+// - ADMIN: Super-user — manage users, categories, system settings, view audit logs
 //
 // The `User.id` field is a UUID that maps 1:1 with the Supabase Auth user ID,
 // allowing us to sync authentication state with our application data.
@@ -30,9 +31,12 @@ datasource db {
 /// Role-Based Access Control — determines what a user can do in the app.
 /// OWNER: Full access (reports, master data, categories, all transactions).
 /// STAFF: Restricted to recording daily cash-in / cash-out transactions.
+/// ADMIN: Super-user — manages users, categories, system settings, and audit logs.
+///        ADMIN routes are completely isolated from OWNER and STAFF dashboards.
 enum Role {
   OWNER
   STAFF
+  ADMIN
 }
 
 /// Transaction type — classifies a financial record as money coming in or out.
@@ -60,17 +64,20 @@ model User {
 
   // --- Relations ---
   transactions Transaction[]
+  auditLogs    AuditLog[]
 
   @@map("users")
 }
 
 /// Master data for income/expense categories.
 /// Examples: "Penjualan Harian", "Bahan Baku", "Gaji Karyawan", "Listrik & Air".
-/// Only OWNER can create, edit, or delete categories through the UI.
+/// ADMIN manages categories through the Admin Panel.
+/// `isActive` controls whether the category is available for new transactions.
 model Category {
   id        String          @id @default(uuid()) @db.Uuid
   name      String          @unique
   type      TransactionType
+  isActive  Boolean         @default(true) @map("is_active")
   createdAt DateTime        @default(now()) @map("created_at")
   updatedAt DateTime        @updatedAt @map("updated_at")
   deletedAt DateTime?       @map("deleted_at")
@@ -79,6 +86,7 @@ model Category {
   transactions Transaction[]
 
   @@index([deletedAt])
+  @@index([isActive])
   @@map("categories")
 }
 
@@ -117,4 +125,39 @@ model Transaction {
   @@index([userId])
   @@index([deletedAt])
   @@map("transactions")
+}
+
+/// Audit log — records important system-level actions performed by ADMIN or users.
+/// Used for accountability tracking in the Admin Panel (/admin/logs).
+///
+/// `action`: short action identifier (e.g., "USER_CREATED", "ROLE_CHANGED")
+/// `details`: optional JSON string with additional context (e.g., target user, old/new values)
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  action    String
+  details   String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // --- Relations ---
+  /// The user who performed this action.
+  userId String @map("user_id") @db.Uuid
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+/// System-level key-value settings managed by ADMIN.
+/// Current keys:
+/// - "MAINTENANCE_MODE": "true" | "false" — controls site-wide maintenance redirect
+///
+/// Using a string value for `value` to support multiple types (bool, number, JSON)
+/// without needing schema changes for each new setting.
+model SystemSetting {
+  id    String @id @default(uuid()) @db.Uuid
+  key   String @unique
+  value String
+
+  @@map("system_settings")
 }
