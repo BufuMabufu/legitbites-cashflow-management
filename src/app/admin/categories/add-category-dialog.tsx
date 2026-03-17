@@ -49,8 +49,8 @@ export function AddCategoryDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="shrink-0">
+      <DialogTrigger>
+        <Button className="shrink-0" type="button">
           <FolderPlus className="w-4 h-4 mr-2" />
           Tambah Kategori
         </Button>

@@ -65,8 +65,8 @@ export function UserTableActions({ userId, currentRole }: UserTableActionsProps)
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" disabled={isPending}>
+      <DropdownMenuTrigger>
+        <Button variant="ghost" size="icon" disabled={isPending} type="button">
           <MoreHorizontal className="w-4 h-4" />
           <span className="sr-only">Buka menu</span>
         </Button>
