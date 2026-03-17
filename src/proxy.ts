@@ -132,8 +132,9 @@ export async function proxy(request: NextRequest) {
   if (isPublicRoute) {
     // If user is already logged in and tries to visit /login, redirect to dashboard
     if (pathname.startsWith("/login") && user) {
+      const role = user?.app_metadata?.role as string | undefined;
       const url = request.nextUrl.clone();
-      url.pathname = "/";
+      url.pathname = role === "ADMIN" ? "/admin" : "/";
       return NextResponse.redirect(url);
     }
     return supabaseResponse;
@@ -146,15 +147,16 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // --- Rule 3: RBAC — block STAFF from OWNER-only routes ---
-  // WHY check user_metadata here?
-  // We can't use Prisma in Edge Runtime. Instead, the RBAC check for
-  // OWNER-only routes is handled in the dashboard layout (server-side).
-  // The middleware only handles auth session refresh and basic auth redirect.
-  // This is acceptable because:
-  // 1. The layout runs server-side and CAN access Prisma for role checks
-  // 2. The middleware still prevents unauthenticated access
-  // 3. Defense in depth: Server Actions also verify roles before mutations
+  // ─── 4. Admin Auto-Redirect ────────────────────────────────────────────────
+  // If an ADMIN visits the root dashboard (/), automatically send them to /admin.
+  if (pathname === "/" && user) {
+    const role = user?.app_metadata?.role as string | undefined;
+    if (role === "ADMIN") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/admin";
+      return NextResponse.redirect(url);
+    }
+  }
 
   return supabaseResponse;
 }
