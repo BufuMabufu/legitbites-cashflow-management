@@ -19,6 +19,7 @@ import {
   LogOut,
   Moon,
   Sun,
+  ShieldCheck,
 } from "lucide-react";
 import {
   Sidebar,
@@ -44,9 +45,11 @@ type NavItem = {
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   ownerOnly?: boolean;
+  adminOnly?: boolean;
 };
 
 // Navigation menu items — items with `ownerOnly: true` are hidden for STAFF
+// Items with `adminOnly: true` are only shown to ADMIN users
 const NAV_ITEMS: NavItem[] = [
   {
     title: "Dashboard",
@@ -69,13 +72,19 @@ const NAV_ITEMS: NavItem[] = [
     icon: FolderOpen,
     ownerOnly: true,
   },
+  {
+    title: "Admin Panel",
+    href: "/admin",
+    icon: ShieldCheck,
+    adminOnly: true,
+  },
 ];
 
 interface AppSidebarProps {
   user: {
     name: string;
     email: string;
-    role: "OWNER" | "STAFF";
+    role: "OWNER" | "STAFF" | "ADMIN";
   };
 }
 
@@ -84,9 +93,13 @@ export function AppSidebar({ user }: AppSidebarProps) {
   const { theme, setTheme } = useTheme();
 
   // Filter nav items based on user role
-  const visibleItems = NAV_ITEMS.filter(
-    (item) => !item.ownerOnly || user.role === "OWNER"
-  );
+  const visibleItems = NAV_ITEMS.filter((item) => {
+    if (item.adminOnly) return user.role === "ADMIN";
+    if (item.ownerOnly) return user.role === "OWNER";
+    // ADMIN only sees the Admin Panel link, not the operational dashboard
+    if (user.role === "ADMIN") return item.adminOnly;
+    return true;
+  });
 
   // Get initials from user name for avatar
   const initials = user.name
@@ -173,8 +186,12 @@ export function AppSidebar({ user }: AppSidebarProps) {
           </Avatar>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold truncate">{user.name}</p>
-            <p className="text-xs text-muted-foreground">
-              {user.role === "OWNER" ? "👑 Pemilik" : "👤 Staff"}
+          <p className="text-xs text-muted-foreground">
+              {user.role === "OWNER"
+                ? "👑 Pemilik"
+                : user.role === "ADMIN"
+                  ? "⚙️ Admin"
+                  : "👤 Staff"}
             </p>
           </div>
         </div>
