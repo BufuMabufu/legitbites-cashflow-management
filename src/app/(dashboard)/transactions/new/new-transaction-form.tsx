@@ -2,14 +2,7 @@
 // New Transaction Page — Client Component
 // =============================================================================
 // Big, clean form for recording income or expense transactions.
-// Designed for ease of use on both mobile and desktop.
-//
-// Key UX decisions:
-// - Tab toggle for INCOME/EXPENSE (colored for visual clarity)
-// - Large numeric input field for quick amount entry
-// - Category dropdown pre-filtered by transaction type
-// - Date defaults to today (most common use case)
-// - Optional description to minimize friction for quick entries
+// Supports two modes: Single Entry (original form) and Bulk Entry (spreadsheet).
 // =============================================================================
 
 "use client";
@@ -21,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import Swal from "sweetalert2";
 import { Label } from "@/components/ui/label";
-import { Loader2, UploadCloud } from "lucide-react";
+import { Loader2, UploadCloud, Pencil, Table2 } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -31,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { createTransaction } from "../actions";
+import { BulkEntryTable } from "./bulk-entry-table";
 
 type Category = {
   id: string;
@@ -48,6 +42,7 @@ export function NewTransactionForm({ categories }: NewTransactionFormProps) {
   const initialType = searchParams.get("type") === "EXPENSE" ? "EXPENSE" : "INCOME";
 
   const [type, setType] = useState<"INCOME" | "EXPENSE">(initialType);
+  const [mode, setMode] = useState<"single" | "bulk">("single");
   const [displayAmount, setDisplayAmount] = useState("");
   const [rawAmount, setRawAmount] = useState("");
   const [fileName, setFileName] = useState<string | null>(null);
@@ -61,11 +56,8 @@ export function NewTransactionForm({ categories }: NewTransactionFormProps) {
   const today = new Date().toISOString().split("T")[0];
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Remove all non-digit characters
     const value = e.target.value.replace(/\D/g, "");
     setRawAmount(value);
-    
-    // Format with thousand separator
     if (value) {
       setDisplayAmount(new Intl.NumberFormat("id-ID").format(Number(value)));
     } else {
@@ -101,7 +93,7 @@ export function NewTransactionForm({ categories }: NewTransactionFormProps) {
   }
 
   return (
-    <div className="max-w-xl mx-auto space-y-8">
+    <div className="max-w-4xl mx-auto space-y-8">
       {/* Page Header */}
       <div>
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Catat Transaksi</h1>
@@ -138,146 +130,183 @@ export function NewTransactionForm({ categories }: NewTransactionFormProps) {
         </Button>
       </div>
 
-      {/* Transaction Form */}
-      <Card className="shadow-md">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-lg md:text-xl">
-            {type === "INCOME" ? "Detail Pemasukan" : "Detail Pengeluaran"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="md:p-8">
-          <form action={handleSubmit} className="space-y-6">
-            {/* Amount — the most important field, so it's first and biggest */}
-            <div className="space-y-3">
-              <Label htmlFor="amount" className="text-base md:text-lg font-bold">
-                Jumlah (Rp)
-              </Label>
-              <Input
-                id="amount"
-                type="text"
-                placeholder="0"
-                required
-                value={displayAmount}
-                onChange={handleAmountChange}
-                inputMode="numeric"
-                className="h-16 md:h-20 text-3xl md:text-4xl font-extrabold text-center rounded-2xl"
-              />
-            </div>
+      {/* Mode Toggle — Single vs Bulk */}
+      <div className="flex items-center justify-center gap-2 p-1 bg-muted rounded-xl w-fit mx-auto">
+        <Button
+          type="button"
+          variant={mode === "single" ? "default" : "ghost"}
+          size="sm"
+          className={`gap-2 rounded-lg h-9 px-4 transition-all ${
+            mode === "single"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+          onClick={() => setMode("single")}
+        >
+          <Pencil className="w-4 h-4" />
+          Satuan
+        </Button>
+        <Button
+          type="button"
+          variant={mode === "bulk" ? "default" : "ghost"}
+          size="sm"
+          className={`gap-2 rounded-lg h-9 px-4 transition-all ${
+            mode === "bulk"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+          onClick={() => setMode("bulk")}
+        >
+          <Table2 className="w-4 h-4" />
+          Banyak
+        </Button>
+      </div>
 
-            {/* Category */}
-            <div className="space-y-3">
-              <Label htmlFor="categoryId" className="text-base md:text-lg font-bold">
-                Kategori
-              </Label>
-              <input type="hidden" name="categoryId" value={categoryId} />
-              <Select value={categoryId} onValueChange={(v) => setCategoryId(v || "")} required>
-                <SelectTrigger className="w-full h-12 md:h-14 text-base md:text-lg rounded-xl">
-                  <SelectValue placeholder="Pilih kategori">
-                    {categoryId
-                      ? (categories.find(c => c.id === categoryId)?.name || "Pilih kategori")
-                      : undefined
-                    }
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {filteredCategories.length === 0 ? (
-                    <SelectItem value="__empty" disabled className="text-base">
-                      Belum ada kategori {type === "INCOME" ? "pemasukan" : "pengeluaran"}
-                    </SelectItem>
-                  ) : (
-                    filteredCategories.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.id} className="text-base md:text-lg py-3 cursor-pointer">
-                        {cat.name}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Date */}
-            <div className="space-y-3">
-              <Label htmlFor="date" className="text-base md:text-lg font-bold">
-                Tanggal
-              </Label>
-              <Input
-                id="date"
-                name="date"
-                type="date"
-                defaultValue={today}
-                required
-                className="h-12 md:h-14 text-base md:text-lg rounded-xl w-full"
-              />
-            </div>
-
-            {/* Description (optional) */}
-            <div className="space-y-3">
-              <Label htmlFor="description" className="text-base md:text-lg font-bold flex items-center justify-between">
-                <span>Keterangan</span>
-                <span className="text-sm font-normal text-muted-foreground bg-muted px-2 py-1 rounded-full">
-                  Opsional
-                </span>
-              </Label>
-              <Input
-                id="description"
-                name="description"
-                placeholder="Contoh: Penjualan nasi goreng 50 porsi"
-                className="h-12 md:h-14 text-base md:text-lg rounded-xl"
-              />
-            </div>
-
-            {/* Receipt Image (optional) */}
-            <div className="space-y-3">
-              <Label htmlFor="receipt" className="text-base md:text-lg font-bold flex items-center justify-between">
-                <span>Foto Bukti Kuitansi</span>
-                <span className="text-sm font-normal text-muted-foreground bg-muted px-2 py-1 rounded-full">
-                  Opsional
-                </span>
-              </Label>
-
-              <Label 
-                htmlFor="receipt" 
-                className="flex items-center justify-center w-full min-h-24 md:min-h-32 p-4 border-2 border-dashed rounded-2xl cursor-pointer hover:bg-muted/50 transition-colors text-center"
-              >
-                <div className="flex flex-col items-center gap-2">
-                  <UploadCloud className="h-8 w-8 text-muted-foreground" />
-                  <span className="text-sm md:text-base font-medium text-muted-foreground break-all px-4">
-                    {fileName ? fileName : "Klik di sini untuk memilih gambar"}
-                  </span>
-                </div>
+      {/* Conditional Content */}
+      {mode === "bulk" ? (
+        <BulkEntryTable type={type} categories={categories} />
+      ) : (
+        /* ─── Single Entry Form (Original) ─── */
+        <Card className="shadow-md max-w-xl">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg md:text-xl">
+              {type === "INCOME" ? "Detail Pemasukan" : "Detail Pengeluaran"}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="md:p-8">
+            <form action={handleSubmit} className="space-y-6">
+              {/* Amount */}
+              <div className="space-y-3">
+                <Label htmlFor="amount" className="text-base md:text-lg font-bold">
+                  Jumlah (Rp)
+                </Label>
                 <Input
-                  id="receipt"
-                  name="receipt"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => setFileName(e.target.files?.[0]?.name || null)}
+                  id="amount"
+                  type="text"
+                  placeholder="0"
+                  required
+                  value={displayAmount}
+                  onChange={handleAmountChange}
+                  inputMode="numeric"
+                  className="h-16 md:h-20 text-3xl md:text-4xl font-extrabold text-center rounded-2xl"
                 />
-              </Label>
-            </div>
+              </div>
 
-            {/* Submit */}
-            <Button
-              type="submit"
-              disabled={isPending}
-              className={`w-full mt-8 h-14 md:h-16 text-lg md:text-xl font-bold rounded-2xl shadow-xl transition-all ${
-                type === "INCOME"
-                  ? "bg-linear-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 hover:-translate-y-1"
-                  : "bg-linear-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 hover:-translate-y-1"
-              }`}
-            >
-              {isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-6 w-6 animate-spin" /> 
-                  Menyimpan...
-                </>
-              ) : (
-                "Simpan Transaksi"
-              )}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+              {/* Category */}
+              <div className="space-y-3">
+                <Label htmlFor="categoryId" className="text-base md:text-lg font-bold">
+                  Kategori
+                </Label>
+                <input type="hidden" name="categoryId" value={categoryId} />
+                <Select value={categoryId} onValueChange={(v) => setCategoryId(v || "")} required>
+                  <SelectTrigger className="w-full h-12 md:h-14 text-base md:text-lg rounded-xl">
+                    <SelectValue placeholder="Pilih kategori">
+                      {categoryId
+                        ? (categories.find(c => c.id === categoryId)?.name || "Pilih kategori")
+                        : undefined
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredCategories.length === 0 ? (
+                      <SelectItem value="__empty" disabled className="text-base">
+                        Belum ada kategori {type === "INCOME" ? "pemasukan" : "pengeluaran"}
+                      </SelectItem>
+                    ) : (
+                      filteredCategories.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.id} className="text-base md:text-lg py-3 cursor-pointer">
+                          {cat.name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Date */}
+              <div className="space-y-3">
+                <Label htmlFor="date" className="text-base md:text-lg font-bold">
+                  Tanggal
+                </Label>
+                <Input
+                  id="date"
+                  name="date"
+                  type="date"
+                  defaultValue={today}
+                  required
+                  className="h-12 md:h-14 text-base md:text-lg rounded-xl w-full"
+                />
+              </div>
+
+              {/* Description (optional) */}
+              <div className="space-y-3">
+                <Label htmlFor="description" className="text-base md:text-lg font-bold flex items-center justify-between">
+                  <span>Keterangan</span>
+                  <span className="text-sm font-normal text-muted-foreground bg-muted px-2 py-1 rounded-full">
+                    Opsional
+                  </span>
+                </Label>
+                <Input
+                  id="description"
+                  name="description"
+                  placeholder="Contoh: Penjualan nasi goreng 50 porsi"
+                  className="h-12 md:h-14 text-base md:text-lg rounded-xl"
+                />
+              </div>
+
+              {/* Receipt Image (optional) */}
+              <div className="space-y-3">
+                <Label htmlFor="receipt" className="text-base md:text-lg font-bold flex items-center justify-between">
+                  <span>Foto Bukti Kuitansi</span>
+                  <span className="text-sm font-normal text-muted-foreground bg-muted px-2 py-1 rounded-full">
+                    Opsional
+                  </span>
+                </Label>
+
+                <Label 
+                  htmlFor="receipt" 
+                  className="flex items-center justify-center w-full min-h-24 md:min-h-32 p-4 border-2 border-dashed rounded-2xl cursor-pointer hover:bg-muted/50 transition-colors text-center"
+                >
+                  <div className="flex flex-col items-center gap-2">
+                    <UploadCloud className="h-8 w-8 text-muted-foreground" />
+                    <span className="text-sm md:text-base font-medium text-muted-foreground break-all px-4">
+                      {fileName ? fileName : "Klik di sini untuk memilih gambar"}
+                    </span>
+                  </div>
+                  <Input
+                    id="receipt"
+                    name="receipt"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => setFileName(e.target.files?.[0]?.name || null)}
+                  />
+                </Label>
+              </div>
+
+              {/* Submit */}
+              <Button
+                type="submit"
+                disabled={isPending}
+                className={`w-full mt-8 h-14 md:h-16 text-lg md:text-xl font-bold rounded-2xl shadow-xl transition-all ${
+                  type === "INCOME"
+                    ? "bg-linear-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 hover:-translate-y-1"
+                    : "bg-linear-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 hover:-translate-y-1"
+                }`}
+              >
+                {isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-6 w-6 animate-spin" /> 
+                    Menyimpan...
+                  </>
+                ) : (
+                  "Simpan Transaksi"
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

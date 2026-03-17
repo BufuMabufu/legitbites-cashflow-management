@@ -6,6 +6,9 @@
 // =============================================================================
 
 import type { Metadata } from "next";
+import { LogOut } from "lucide-react";
+import { logout } from "@/app/login/actions";
+import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
   title: "Sedang Maintenance — LegitBites",
@@ -46,11 +49,23 @@ export default function MaintenancePage() {
         <div className="border-t border-slate-700 mb-8" />
 
         {/* Info box */}
-        <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4">
+        <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 mb-6">
           <p className="text-slate-400 text-sm">
             Butuh bantuan segera? Hubungi administrator sistem.
           </p>
         </div>
+
+        {/* Logout Form */}
+        <form action={logout}>
+          <Button 
+            type="submit" 
+            variant="outline" 
+            className="w-full border-slate-700 bg-slate-800/50 text-slate-300 hover:bg-slate-700 hover:text-white"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Keluar dari Akun ini
+          </Button>
+        </form>
 
         {/* Brand footer */}
         <p className="mt-8 text-slate-600 text-xs font-medium tracking-wider uppercase">

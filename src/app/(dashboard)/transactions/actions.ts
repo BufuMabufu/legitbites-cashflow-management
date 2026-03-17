@@ -293,3 +293,159 @@ export async function updateTransaction(id: string, formData: FormData) {
     return { error: "Gagal mengubah transaksi." };
   }
 }
+
+// =============================================================================
+// Bulk Transaction Creation
+// =============================================================================
+
+export async function createBulkTransactions(formData: FormData) {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { error: "Anda harus login untuk mencatat transaksi." };
+  }
+
+  const type = formData.get("type") as "INCOME" | "EXPENSE";
+  const countStr = formData.get("count") as string;
+  const count = parseInt(countStr || "0", 10);
+
+  if (count === 0) {
+    return { error: "Tidak ada data untuk disimpan." };
+  }
+
+  if (type !== "INCOME" && type !== "EXPENSE") {
+    return { error: "Tipe transaksi tidak valid." };
+  }
+
+  const rowErrors: { row: number; message: string }[] = [];
+  const validatedData: {
+    amount: number;
+    categoryId: string;
+    date: Date;
+    description: string | null;
+    receiptFile: File | null;
+  }[] = [];
+
+  // Parse entries from FormData
+  const entries = [];
+  for (let i = 0; i < count; i++) {
+    const amountStr = formData.get(`entries[${i}].amount`) as string | null;
+    const categoryId = formData.get(`entries[${i}].categoryId`) as string | null;
+    const dateStr = formData.get(`entries[${i}].date`) as string | null;
+    const description = (formData.get(`entries[${i}].description`) as string | null) || "";
+    const receiptFile = formData.get(`entries[${i}].receipt`) as File | null;
+
+    entries.push({
+      amount: amountStr || "",
+      categoryId: categoryId || "",
+      date: dateStr || "",
+      description,
+      receiptFile,
+    });
+  }
+
+  const categoryIds = [...new Set(entries.map((e) => e.categoryId).filter(Boolean))];
+  const categories = categoryIds.length > 0
+    ? await prisma.category.findMany({
+        where: { id: { in: categoryIds } },
+        select: { id: true, type: true },
+      })
+    : [];
+
+  const categoryMap = new Map(categories.map((c) => [c.id, c.type]));
+
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[i];
+    const rowNum = i + 1;
+
+    const amount = parseFloat(entry.amount);
+    if (!entry.amount || isNaN(amount) || amount <= 0) {
+      rowErrors.push({ row: rowNum, message: "Jumlah harus lebih dari 0." });
+      continue;
+    }
+
+    if (!entry.categoryId) {
+      rowErrors.push({ row: rowNum, message: "Kategori wajib dipilih." });
+      continue;
+    }
+    const catType = categoryMap.get(entry.categoryId);
+    if (!catType) {
+      rowErrors.push({ row: rowNum, message: "Kategori tidak ditemukan." });
+      continue;
+    }
+    if (catType !== type) {
+      rowErrors.push({ row: rowNum, message: "Kategori tidak sesuai tipe." });
+      continue;
+    }
+
+    if (!entry.date) {
+      rowErrors.push({ row: rowNum, message: "Tanggal wajib diisi." });
+      continue;
+    }
+
+    validatedData.push({
+      amount,
+      categoryId: entry.categoryId,
+      date: new Date(entry.date),
+      description: entry.description?.trim() || null,
+      receiptFile: entry.receiptFile,
+    });
+  }
+
+  if (rowErrors.length > 0) {
+    return { rowErrors };
+  }
+
+  try {
+    const supabaseAdmin = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    // Upload files concurrently
+    const finalData = await Promise.all(
+      validatedData.map(async (data) => {
+        let imageUrl: string | null = null;
+
+        if (data.receiptFile && data.receiptFile.size > 0 && data.receiptFile.name) {
+          const fileExt = data.receiptFile.name.split('.').pop() || "png";
+          const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+          const filePath = `receipts/${fileName}`;
+
+          const { error: uploadError } = await supabaseAdmin.storage
+            .from('receipts')
+            .upload(filePath, data.receiptFile);
+
+          if (!uploadError) {
+            const { data: publicUrlData } = supabaseAdmin.storage
+              .from('receipts')
+              .getPublicUrl(filePath);
+            imageUrl = publicUrlData.publicUrl;
+          } else {
+            console.error("Storage upload error for row:", uploadError);
+          }
+        }
+
+        return {
+          amount: data.amount,
+          categoryId: data.categoryId,
+          date: data.date,
+          description: data.description,
+          imageUrl,
+          type,
+          userId: user.id,
+        };
+      })
+    );
+
+    await prisma.transaction.createMany({
+      data: finalData,
+    });
+
+    revalidatePath("/");
+    revalidatePath("/transactions");
+    return { success: true, count: finalData.length };
+  } catch (error) {
+    console.error("Failed to create bulk transactions:", error);
+    return { error: "Gagal menyimpan transaksi. Silakan coba lagi." };
+  }
+}
