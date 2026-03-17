@@ -13,7 +13,7 @@ import { redirect } from "next/navigation";
 import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
-import { Role } from "@/generated/prisma";
+import { Role } from "@prisma/client";
 
 // ---------------------------------------------------------------------------
 // Supabase Admin Client (requires SERVICE_ROLE_KEY)

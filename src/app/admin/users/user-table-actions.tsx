@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { resetUserPassword, changeUserRole } from "./actions";
-import { Role } from "@/generated/prisma";
+import { Role } from "@prisma/client";
 
 interface UserTableActionsProps {
   userId: string;
