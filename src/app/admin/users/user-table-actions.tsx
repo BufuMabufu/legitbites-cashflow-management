@@ -7,7 +7,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { MoreHorizontal, KeyRound, Trash2 } from "lucide-react";
+import { MoreHorizontal, KeyRound, Trash2, UserPen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EditUserDialog } from "./edit-user-dialog";
 import {
@@ -44,6 +44,7 @@ const ROLES: { value: Role; label: string }[] = [
 export function UserTableActions({ user }: UserTableActionsProps) {
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
 
   const handleResetPassword = () => {
     startTransition(async () => {
@@ -82,55 +83,68 @@ export function UserTableActions({ user }: UserTableActionsProps) {
   };
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger
-        render={
-          <Button variant="ghost" size="icon" disabled={isPending} type="button">
-            <MoreHorizontal className="w-4 h-4" />
-            <span className="sr-only">Buka menu</span>
-          </Button>
-        }
+    <>
+      <EditUserDialog 
+        user={user} 
+        open={showEditDialog} 
+        onOpenChange={setShowEditDialog} 
       />
-      <DropdownMenuContent align="end">
-        <DropdownMenuGroup>
-          <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <EditUserDialog user={user} />
-        <DropdownMenuItem onClick={handleResetPassword} disabled={isPending}>
-          <KeyRound className="w-4 h-4 mr-2" />
-          Reset Password
-        </DropdownMenuItem>
-        <DropdownMenuSub>
-          <DropdownMenuSubTrigger>
-            <span className="mr-2">🔄</span>
-            Ubah Role
-          </DropdownMenuSubTrigger>
-          <DropdownMenuSubContent>
-            {ROLES.map((r) => (
-              <DropdownMenuItem
-                key={r.value}
-                onClick={() => handleChangeRole(r.value)}
-                disabled={r.value === user.role || isPending}
-              >
-                {r.label}
-                {r.value === user.role && (
-                  <span className="ml-auto text-xs text-muted-foreground">aktif</span>
-                )}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuSubContent>
-        </DropdownMenuSub>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem 
-          onClick={handleDeleteUser} 
-          disabled={isPending}
-          variant="destructive"
-        >
-          <Trash2 className="w-4 h-4 mr-2" />
-          Hapus Akun
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+      
+      <DropdownMenu open={open} onOpenChange={setOpen}>
+        <DropdownMenuTrigger
+          render={
+            <Button variant="ghost" size="icon" disabled={isPending} type="button">
+              <MoreHorizontal className="w-4 h-4" />
+              <span className="sr-only">Buka menu</span>
+            </Button>
+          }
+        />
+        <DropdownMenuContent align="end">
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+          </DropdownMenuGroup>
+          <DropdownMenuSeparator />
+          
+          <DropdownMenuItem onSelect={() => setShowEditDialog(true)}>
+            <UserPen className="w-4 h-4 mr-2" />
+            Edit Akun
+          </DropdownMenuItem>
+
+          <DropdownMenuItem onClick={handleResetPassword} disabled={isPending}>
+            <KeyRound className="w-4 h-4 mr-2" />
+            Reset Password
+          </DropdownMenuItem>
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              <span className="mr-2">🔄</span>
+              Ubah Role
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent>
+              {ROLES.map((r) => (
+                <DropdownMenuItem
+                  key={r.value}
+                  onClick={() => handleChangeRole(r.value)}
+                  disabled={r.value === user.role || isPending}
+                >
+                  {r.label}
+                  {r.value === user.role && (
+                    <span className="ml-auto text-xs text-muted-foreground">aktif</span>
+                  )}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem 
+            onClick={handleDeleteUser} 
+            disabled={isPending}
+            variant="destructive"
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Hapus Akun
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>
   );
 }

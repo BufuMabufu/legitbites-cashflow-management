@@ -7,7 +7,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { MoreHorizontal, Trash2 } from "lucide-react";
+import { MoreHorizontal, Trash2, FolderPen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -34,6 +34,7 @@ interface CategoryTableActionsProps {
 export function CategoryTableActions({ category }: CategoryTableActionsProps) {
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
 
   const handleDelete = () => {
     if (!confirm(`Apakah Anda yakin ingin menghapus kategori "${category.name}"?`)) return;
@@ -48,31 +49,42 @@ export function CategoryTableActions({ category }: CategoryTableActionsProps) {
   };
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger
-        render={
-          <Button variant="ghost" size="icon" disabled={isPending} type="button">
-            <MoreHorizontal className="w-4 h-4" />
-            <span className="sr-only">Buka menu</span>
-          </Button>
-        }
+    <>
+      <EditCategoryDialog 
+        category={category} 
+        open={showEditDialog} 
+        onOpenChange={setShowEditDialog} 
       />
-      <DropdownMenuContent align="end">
-        <DropdownMenuGroup>
-          <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <EditCategoryDialog category={category} />
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onClick={handleDelete}
-          disabled={isPending}
-          variant="destructive"
-        >
-          <Trash2 className="w-4 h-4 mr-2" />
-          Hapus Kategori
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+      
+      <DropdownMenu open={open} onOpenChange={setOpen}>
+        <DropdownMenuTrigger
+          render={
+            <Button variant="ghost" size="icon" disabled={isPending} type="button">
+              <MoreHorizontal className="w-4 h-4" />
+              <span className="sr-only">Buka menu</span>
+            </Button>
+          }
+        />
+        <DropdownMenuContent align="end">
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+          </DropdownMenuGroup>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onSelect={() => setShowEditDialog(true)}>
+            <FolderPen className="w-4 h-4 mr-2" />
+            Edit Kategori
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={handleDelete}
+            disabled={isPending}
+            variant="destructive"
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Hapus Kategori
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>
   );
 }

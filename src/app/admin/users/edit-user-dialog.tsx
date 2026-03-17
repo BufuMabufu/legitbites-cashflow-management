@@ -6,7 +6,7 @@
 
 "use client";
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,7 +15,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,7 +25,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { UserPen } from "lucide-react";
 import { toast } from "sonner";
 import { updateUser } from "./actions";
 import { Role } from "@prisma/client";
@@ -38,10 +36,11 @@ interface EditUserDialogProps {
     email: string;
     role: Role;
   };
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-export function EditUserDialog({ user }: EditUserDialogProps) {
-  const [open, setOpen] = useState(false);
+export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps) {
   const [isPending, startTransition] = useTransition();
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -51,7 +50,7 @@ export function EditUserDialog({ user }: EditUserDialogProps) {
       try {
         await updateUser(user.id, formData);
         toast.success("Akun berhasil diperbarui.");
-        setOpen(false);
+        onOpenChange(false);
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Gagal memperbarui akun.");
       }
@@ -59,12 +58,7 @@ export function EditUserDialog({ user }: EditUserDialogProps) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <DropdownItemWithIcon icon={<UserPen className="w-4 h-4 mr-2" />} label="Edit Akun" />
-        }
-      />
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Edit Akun</DialogTitle>
@@ -74,17 +68,17 @@ export function EditUserDialog({ user }: EditUserDialogProps) {
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="edit-name">Nama Lengkap</Label>
-            <Input id="edit-name" name="name" defaultValue={user.name || ""} required />
+            <Label htmlFor={`edit-name-${user.id}`}>Nama Lengkap</Label>
+            <Input id={`edit-name-${user.id}`} name="name" defaultValue={user.name || ""} required />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="edit-email">Alamat Email</Label>
-            <Input id="edit-email" name="email" type="email" defaultValue={user.email} required />
+            <Label htmlFor={`edit-email-${user.id}`}>Alamat Email</Label>
+            <Input id={`edit-email-${user.id}`} name="email" type="email" defaultValue={user.email} required />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="edit-role">Role</Label>
+            <Label htmlFor={`edit-role-${user.id}`}>Role</Label>
             <Select name="role" defaultValue={user.role} required>
-              <SelectTrigger id="edit-role">
+              <SelectTrigger id={`edit-role-${user.id}`}>
                 <SelectValue placeholder="Pilih role" />
               </SelectTrigger>
               <SelectContent>
@@ -95,7 +89,7 @@ export function EditUserDialog({ user }: EditUserDialogProps) {
             </Select>
           </div>
           <DialogFooter className="pt-2">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Batal
             </Button>
             <Button type="submit" disabled={isPending}>
@@ -105,15 +99,5 @@ export function EditUserDialog({ user }: EditUserDialogProps) {
         </form>
       </DialogContent>
     </Dialog>
-  );
-}
-
-// Helper to make it look like a DropdownItem but it's used inside DialogTrigger
-function DropdownItemWithIcon({ icon, label }: { icon: React.ReactNode; label: string }) {
-  return (
-    <div className="relative flex cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-hidden select-none hover:bg-accent hover:text-accent-foreground w-full">
-      {icon}
-      {label}
-    </div>
   );
 }

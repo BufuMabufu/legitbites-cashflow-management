@@ -6,7 +6,7 @@
 
 "use client";
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,7 +15,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,7 +25,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FolderPen } from "lucide-react";
 import { toast } from "sonner";
 import { updateCategory } from "./actions";
 import { TransactionType } from "@prisma/client";
@@ -37,10 +35,11 @@ interface EditCategoryDialogProps {
     name: string;
     type: TransactionType;
   };
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-export function EditCategoryDialog({ category }: EditCategoryDialogProps) {
-  const [open, setOpen] = useState(false);
+export function EditCategoryDialog({ category, open, onOpenChange }: EditCategoryDialogProps) {
   const [isPending, startTransition] = useTransition();
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -50,7 +49,7 @@ export function EditCategoryDialog({ category }: EditCategoryDialogProps) {
       try {
         await updateCategory(category.id, formData);
         toast.success("Kategori berhasil diperbarui.");
-        setOpen(false);
+        onOpenChange(false);
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Gagal memperbarui kategori.");
       }
@@ -58,12 +57,7 @@ export function EditCategoryDialog({ category }: EditCategoryDialogProps) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <DropdownItemWithIcon icon={<FolderPen className="w-4 h-4 mr-2" />} label="Edit Kategori" />
-        }
-      />
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Edit Kategori</DialogTitle>
@@ -73,13 +67,13 @@ export function EditCategoryDialog({ category }: EditCategoryDialogProps) {
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="edit-cat-name">Nama Kategori</Label>
-            <Input id="edit-cat-name" name="name" defaultValue={category.name} required />
+            <Label htmlFor={`edit-cat-name-${category.id}`}>Nama Kategori</Label>
+            <Input id={`edit-cat-name-${category.id}`} name="name" defaultValue={category.name} required />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="edit-cat-type">Tipe</Label>
+            <Label htmlFor={`edit-cat-type-${category.id}`}>Tipe</Label>
             <Select name="type" defaultValue={category.type} required>
-              <SelectTrigger id="edit-cat-type">
+              <SelectTrigger id={`edit-cat-type-${category.id}`}>
                 <SelectValue placeholder="Pilih tipe" />
               </SelectTrigger>
               <SelectContent>
@@ -89,7 +83,7 @@ export function EditCategoryDialog({ category }: EditCategoryDialogProps) {
             </Select>
           </div>
           <DialogFooter className="pt-2">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Batal
             </Button>
             <Button type="submit" disabled={isPending}>
@@ -99,15 +93,5 @@ export function EditCategoryDialog({ category }: EditCategoryDialogProps) {
         </form>
       </DialogContent>
     </Dialog>
-  );
-}
-
-// Helper to make it look like a DropdownItem but it's used inside DialogTrigger
-function DropdownItemWithIcon({ icon, label }: { icon: React.ReactNode; label: string }) {
-  return (
-    <div className="relative flex cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-hidden select-none hover:bg-accent hover:text-accent-foreground w-full">
-      {icon}
-      {label}
-    </div>
   );
 }
