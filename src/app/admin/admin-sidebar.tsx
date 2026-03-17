@@ -2,8 +2,7 @@
 // Admin Sidebar Component
 // =============================================================================
 // Navigation sidebar specific to the Admin Panel.
-// Separate from the dashboard sidebar — ADMIN has a completely different
-// navigation structure focused on system management.
+// Refactored to use Shadcn Sidebar components for consistency with the dashboard.
 // =============================================================================
 
 "use client";
@@ -17,11 +16,25 @@ import {
   ClipboardList,
   LayoutDashboard,
   LogOut,
+  Moon,
+  Sun,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
+import { useTheme } from "next-themes";
 import Swal from "sweetalert2";
 import { logout } from "@/app/login/actions";
 
@@ -38,6 +51,7 @@ interface AdminSidebarProps {
 
 export function AdminSidebar({ user }: AdminSidebarProps) {
   const pathname = usePathname();
+  const { theme, setTheme } = useTheme();
 
   const initials = user.name
     .split(" ")
@@ -61,53 +75,56 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
   };
 
   return (
-    <aside className="w-64 border-r flex flex-col shrink-0 bg-background">
+    <Sidebar>
       {/* Brand */}
-      <div className="p-4 flex items-center gap-3">
-        <div className="w-10 h-10 p-1 bg-pink-50 dark:bg-pink-950/30 border border-pink-100 dark:border-pink-900 rounded-xl flex items-center justify-center shadow-sm shrink-0">
-          <Image src="/icon.svg" alt="Logo" width={24} height={24} />
+      <SidebarHeader className="p-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 p-1.5 bg-pink-50 dark:bg-pink-950/30 border border-pink-100 dark:border-pink-900 rounded-[14px] flex items-center justify-center shadow-sm shrink-0">
+            <Image src="/icon.svg" alt="Logo" width={32} height={32} className="object-contain" />
+          </div>
+          <div>
+            <h1 className="font-bold text-lg leading-tight">LegitBites</h1>
+            <p className="text-xs text-muted-foreground">Admin Panel</p>
+          </div>
         </div>
-        <div>
-          <h1 className="font-bold text-sm leading-tight">LegitBites</h1>
-          <p className="text-xs text-muted-foreground">Admin Panel</p>
-        </div>
-      </div>
+      </SidebarHeader>
 
       <Separator />
 
       {/* Navigation */}
-      <nav className="flex-1 p-3 space-y-1">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-2 mb-2">
-          Menu
-        </p>
-        {ADMIN_NAV.map((item) => {
-          const isActive = item.exact
-            ? pathname === item.href
-            : pathname.startsWith(item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                isActive
-                  ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              )}
-            >
-              <item.icon className="w-4 h-4 shrink-0" />
-              {item.title}
-            </Link>
-          );
-        })}
-      </nav>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Menu</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {ADMIN_NAV.map((item) => {
+                const isActive = item.exact
+                  ? pathname === item.href
+                  : pathname.startsWith(item.href);
+                return (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      render={<Link href={item.href} />}
+                      isActive={isActive}
+                      className="h-12 text-base"
+                    >
+                      <item.icon className="w-5 h-5" />
+                      <span className="font-medium">{item.title}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
 
       {/* Footer */}
-      <div className="p-4">
+      <SidebarFooter className="p-4">
         <Separator className="mb-4" />
         <div className="flex items-center gap-3 mb-3">
-          <Avatar className="h-9 w-9">
-            <AvatarFallback className="bg-violet-100 text-violet-700 font-semibold text-xs">
+          <Avatar className="h-10 w-10">
+            <AvatarFallback className="bg-emerald-100 text-emerald-700 font-semibold">
               {initials}
             </AvatarFallback>
           </Avatar>
@@ -116,16 +133,31 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
             <p className="text-xs text-muted-foreground">⚙️ Admin</p>
           </div>
         </div>
-        <Button
-          type="button"
-          onClick={handleLogout}
-          variant="outline"
-          className="w-full h-10 text-sm font-medium text-destructive hover:bg-destructive hover:text-destructive-foreground"
-        >
-          <LogOut className="w-4 h-4 mr-2" />
-          Keluar
-        </Button>
-      </div>
-    </aside>
+        <div className="grid grid-cols-2 gap-2 mt-2">
+          <Button
+            type="button"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            variant="outline"
+            className="w-full h-11 text-sm font-medium"
+          >
+            {theme === "dark" ? (
+              <Sun className="w-4 h-4 mr-2" />
+            ) : (
+              <Moon className="w-4 h-4 mr-2" />
+            )}
+            Mode
+          </Button>
+          <Button
+            type="button"
+            onClick={handleLogout}
+            variant="outline"
+            className="w-full h-11 text-sm font-medium text-destructive hover:bg-destructive hover:text-destructive-foreground"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Keluar
+          </Button>
+        </div>
+      </SidebarFooter>
+    </Sidebar>
   );
 }
