@@ -95,7 +95,7 @@ export function NewTransactionForm({ categories }: NewTransactionFormProps) {
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       {/* Page Header */}
-      <div>
+      <div className="text-center">
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Catat Transaksi</h1>
         <p className="text-base md:text-lg text-muted-foreground mt-2">
           Pilih tipe dan isi detail transaksi
@@ -167,7 +167,7 @@ export function NewTransactionForm({ categories }: NewTransactionFormProps) {
         <BulkEntryTable type={type} categories={categories} />
       ) : (
         /* ─── Single Entry Form (Original) ─── */
-        <Card className="shadow-md max-w-xl">
+        <Card className="shadow-md max-w-xl mx-auto">
           <CardHeader className="pb-4">
             <CardTitle className="text-lg md:text-xl">
               {type === "INCOME" ? "Detail Pemasukan" : "Detail Pengeluaran"}
