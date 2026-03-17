@@ -70,7 +70,14 @@ export function CategoryTableActions({ category }: CategoryTableActionsProps) {
             <DropdownMenuLabel>Aksi</DropdownMenuLabel>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onSelect={() => setShowEditDialog(true)}>
+          {/* closeOnClick=false prevents Base UI from stealing focus before Dialog can open */}
+          <DropdownMenuItem
+            closeOnClick={false}
+            onClick={() => {
+              setOpen(false);
+              setTimeout(() => setShowEditDialog(true), 50);
+            }}
+          >
             <FolderPen className="w-4 h-4 mr-2" />
             Edit Kategori
           </DropdownMenuItem>
