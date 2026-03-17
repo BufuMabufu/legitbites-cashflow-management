@@ -11,6 +11,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { runCleanup } from "@/lib/cleanup";
 
 export type CurrentUser = {
   id: string;
@@ -41,6 +42,10 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   });
 
   if (!dbUser) return null;
+
+  // Fire-and-forget lazy cleanup of old soft-deleted records (> 5 mins)
+  // This runs asynchronously and does not block the user's request.
+  void runCleanup();
 
   return {
     id: dbUser.id,
