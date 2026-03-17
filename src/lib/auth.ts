@@ -16,7 +16,7 @@ export type CurrentUser = {
   id: string;
   email: string;
   name: string;
-  role: "OWNER" | "STAFF";
+  role: "OWNER" | "STAFF" | "ADMIN";
 };
 
 /**
