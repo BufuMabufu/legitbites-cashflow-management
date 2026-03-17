@@ -21,31 +21,38 @@ import { RecentTransactionsTable } from "./recent-transactions-table";
 import { IncomeDonutChart } from "./income-donut-chart";
 
 /**
- * Helper to determine date range based on the query parameter
+ * Helper to determine date range based on the query parameter.
+ * Returns UTC midnights that correspond to the start/end of Jakarta days.
  */
 function getDateRange(rangeParam: string): { gte: Date; lt: Date; label: string } {
-  const now = new Date();
-  const dateStr = now.toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
-  const todayUTC = new Date(dateStr); // UTC midnight of current local day
-  const tomorrowUTC = new Date(todayUTC);
-  tomorrowUTC.setDate(tomorrowUTC.getDate() + 1);
+  // Get current date string in Jakarta (YYYY-MM-DD)
+  const jakartaTodayStr = new Intl.DateTimeFormat("sv-SE", { 
+    timeZone: "Asia/Jakarta" 
+  }).format(new Date()); 
+  
+  // Base date is midnight Jakarta as a UTC timestamp
+  const today = new Date(`${jakartaTodayStr}T00:00:00Z`);
+  const tomorrow = new Date(today);
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
 
-  let gte = todayUTC;
-  const lt = tomorrowUTC;
+  let gte = today;
+  const lt = tomorrow;
   let label = "Hari Ini";
 
   if (rangeParam === "all") {
-    gte = new Date(2000, 0, 1); // effectively all-time
+    gte = new Date("2000-01-01T00:00:00Z");
     label = "Semua Waktu";
   } else if (rangeParam === "7d") {
-    gte = new Date(todayUTC);
-    gte.setDate(gte.getDate() - 6);
+    gte = new Date(today);
+    gte.setUTCDate(gte.getUTCDate() - 6);
     label = "7 Hari Terakhir";
   } else if (rangeParam === "this_month") {
-    gte = new Date(todayUTC.getFullYear(), todayUTC.getMonth(), 1);
+    const parts = jakartaTodayStr.split("-").map(Number);
+    gte = new Date(Date.UTC(parts[0], parts[1] - 1, 1));
     label = "Bulan Ini";
   } else if (rangeParam === "this_year") {
-    gte = new Date(todayUTC.getFullYear(), 0, 1);
+    const y = Number(jakartaTodayStr.split("-")[0]);
+    gte = new Date(Date.UTC(y, 0, 1));
     label = "Tahun Ini";
   }
 
@@ -58,13 +65,11 @@ function getDateRange(rangeParam: string): { gte: Date; lt: Date; label: string 
 async function getDashboardData(rangeParam: string) {
   const { gte, lt, label: rangeLabel } = getDateRange(rangeParam);
 
-  // For the line charts, if range is "today", we still want to show a 7-day trend
-  // so the chart doesn't look empty and weird with flat zeros.
+  // Line charts ctx gte: for "today", we show 7 days trend
   let chartGte = gte;
   if (rangeParam === "today") {
-    const todayUTC = new Date(new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" }));
-    chartGte = new Date(todayUTC);
-    chartGte.setDate(chartGte.getDate() - 6);
+    chartGte = new Date(gte);
+    chartGte.setUTCDate(chartGte.getUTCDate() - 6);
   }
 
   const [
@@ -130,63 +135,48 @@ async function getDashboardData(rangeParam: string) {
 
   const currentIncome = Number(rangeIncomeResult._sum.amount ?? 0);
   const currentExpense = Number(rangeExpenseResult._sum.amount ?? 0);
+  const totalBalance = Number(allTimeIncome._sum.amount ?? 0) - Number(allTimeExpense._sum.amount ?? 0);
 
-  // Constraints: Safe total balance calculation. NEVER ALTER THIS LOGIC.
-  const totalIncome = Number(allTimeIncome._sum.amount ?? 0);
-  const totalExpense = Number(allTimeExpense._sum.amount ?? 0);
-  const totalBalance = totalIncome - totalExpense;
+  // Build Linear Chart data timeline
+  const timelineMap = new Map<string, { income: number; expense: number }>();
+  
+  const dateLocales: Intl.DateTimeFormatOptions = {
+    timeZone: "Asia/Jakarta",
+    ...(rangeParam === "this_year" || rangeParam === "all"
+      ? { month: "long", year: "numeric" } 
+      : { day: "numeric", month: "short", year: "numeric" })
+  };
 
-  // Build Linear Chart data timeline (We'll build it based on actual data points to scale well with large ranges)
-  const chartDataIncomeMap = new Map<string, number>();
-  const chartDataExpenseMap = new Map<string, number>();
-
-  // Use a sensible strategy: adapt the grouping format based on the selected range.
-  const isMonthGrouping = rangeParam === "this_year" || rangeParam === "all";
-  const dateLocales: Intl.DateTimeFormatOptions = isMonthGrouping 
-    ? { month: "long", year: "numeric" } 
-    : { day: "numeric", month: "short", year: "numeric" };
-
-  if (rangeParam === "today" || rangeParam === "7d") {
-    const todayUTC = new Date(new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" }));
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(todayUTC);
-      d.setDate(d.getDate() - i);
-      const dateLabel = d.toLocaleDateString("id-ID", dateLocales);
-      chartDataIncomeMap.set(dateLabel, 0);
-      chartDataExpenseMap.set(dateLabel, 0);
-    }
-  } else if (rangeParam === "this_year") {
-    const currentYear = new Date().getFullYear();
-    for (let i = 0; i < 12; i++) {
-      const d = new Date(currentYear, i, 1);
-      const dateLabel = d.toLocaleDateString("id-ID", dateLocales);
-      chartDataIncomeMap.set(dateLabel, 0);
-      chartDataExpenseMap.set(dateLabel, 0);
-    }
-  } else if (rangeParam === "this_month") {
-    const today = new Date();
-    const currentDay = today.getDate();
-    const currentMonth = today.getMonth();
-    const currentYear = today.getFullYear();
-    for (let i = 1; i <= currentDay; i++) {
-      const d = new Date(currentYear, currentMonth, i);
-      const dateLabel = d.toLocaleDateString("id-ID", dateLocales);
-      chartDataIncomeMap.set(dateLabel, 0);
-      chartDataExpenseMap.set(dateLabel, 0);
+  // Pre-fill timeline with all dates in range to ensure zero points are mapped and sorted
+  const cursor = new Date(chartGte);
+  while (cursor < lt) {
+    const label = cursor.toLocaleDateString("id-ID", dateLocales);
+    timelineMap.set(label, { income: 0, expense: 0 });
+    
+    // Jump by month for year/all view, day otherwise
+    if (rangeParam === "this_year" || rangeParam === "all") {
+      cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+    } else {
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
     }
   }
 
+  // Merge transaction data into timeline
   for (const group of rangeIncomeTransactions) {
-    const dateLabel = new Date(group.date).toLocaleDateString("id-ID", dateLocales);
-    chartDataIncomeMap.set(dateLabel, (chartDataIncomeMap.get(dateLabel) || 0) + Number(group._sum.amount ?? 0));
+    const label = new Date(group.date).toLocaleDateString("id-ID", dateLocales);
+    if (timelineMap.has(label)) {
+      timelineMap.get(label)!.income += Number(group._sum.amount ?? 0);
+    }
   }
   for (const group of rangeExpenseTransactions) {
-    const dateLabel = new Date(group.date).toLocaleDateString("id-ID", dateLocales);
-    chartDataExpenseMap.set(dateLabel, (chartDataExpenseMap.get(dateLabel) || 0) + Number(group._sum.amount ?? 0));
+    const label = new Date(group.date).toLocaleDateString("id-ID", dateLocales);
+    if (timelineMap.has(label)) {
+      timelineMap.get(label)!.expense += Number(group._sum.amount ?? 0);
+    }
   }
 
-  const chartDataIncome = Array.from(chartDataIncomeMap.entries()).map(([date, income]) => ({ date, income }));
-  const chartDataExpense = Array.from(chartDataExpenseMap.entries()).map(([date, expense]) => ({ date, expense }));
+  const chartDataIncome = Array.from(timelineMap.entries()).map(([date, val]) => ({ date, income: val.income }));
+  const chartDataExpense = Array.from(timelineMap.entries()).map(([date, val]) => ({ date, expense: val.expense }));
 
   // Build Donut Chart Data for Expenses
   const donutData: { name: string; value: number; color: string }[] = [];
