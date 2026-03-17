@@ -15,6 +15,7 @@
 
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import { PlusCircle } from "lucide-react";
@@ -22,19 +23,44 @@ import { TransactionDataTable } from "./transaction-data-table";
 import { Button } from "@/components/ui/button";
 
 
-export default async function TransactionsPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+export default async function TransactionsPage({ 
+  searchParams 
+}: { 
+  searchParams: Promise<{ page?: string; q?: string; from?: string; to?: string }> 
+}) {
   const user = await getCurrentUser();
   if (!user) return null;
 
   const params = await searchParams;
   const currentPage = Number(params.page) || 1;
+  const searchQuery = params.q || "";
+  const dateFrom = params.from;
+  const dateTo = params.to;
   const pageSize = 10;
 
-  // RBAC: Logic is already handled by default since we don't filter by userId for now
-  // (In a real app, OWNER sees everything, STAFF sees only theirs - but here schema allows both)
-  const whereClause = { deletedAt: null };
+  // Build filtering condition
+  const whereClause: Prisma.TransactionWhereInput = { 
+    deletedAt: null 
+  };
 
-  // Fetch total count for pagination metadata
+  if (searchQuery) {
+    whereClause.OR = [
+      { description: { contains: searchQuery, mode: 'insensitive' } },
+      { category: { name: { contains: searchQuery, mode: 'insensitive' } } }
+    ];
+  }
+
+  if (dateFrom || dateTo) {
+    whereClause.date = {};
+    if (dateFrom) whereClause.date.gte = new Date(dateFrom);
+    if (dateTo) {
+      const toDate = new Date(dateTo);
+      toDate.setHours(23, 59, 59, 999);
+      whereClause.date.lte = toDate;
+    }
+  }
+
+  // Fetch total count based on active filters
   const totalItems = await prisma.transaction.count({ where: whereClause });
   const totalPages = Math.ceil(totalItems / pageSize);
 

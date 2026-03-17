@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect, useRef, useCallback } from "react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { Calendar as CalendarIcon, Download, Search, Trash2, FileImage, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
@@ -76,39 +76,68 @@ export function TransactionDataTable({
   totalItems
 }: TransactionDataTableProps) {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const searchParams = useSearchParams();
+  
+  // Initialize state from URL params
+  const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
+    const from = searchParams.get("from");
+    const to = searchParams.get("to");
+    return {
+      from: from ? new Date(from) : undefined,
+      to: to ? new Date(to) : undefined,
+    };
+  });
+  
   const [isPending, startTransition] = useTransition();
   const [lastDeletedAt, setLastDeletedAt] = useState<string | null>(null);
 
-  // Handle client-side filtering
-  const filteredTransactions = initialTransactions.filter((tx) => {
-    // Search match (category name or description)
-    const searchLower = searchQuery.toLowerCase();
-    const matchesSearch =
-      tx.category.name.toLowerCase().includes(searchLower) ||
-      (tx.description && tx.description.toLowerCase().includes(searchLower));
-
-    // Date range match
-    let matchesDate = true;
-    if (dateRange?.from) {
-      const txDate = new Date(tx.date);
-      // Reset time for safe comparison
-      txDate.setHours(0, 0, 0, 0);
-      const fromDate = new Date(dateRange.from);
-      fromDate.setHours(0, 0, 0, 0);
-
-      if (dateRange.to) {
-        const toDate = new Date(dateRange.to);
-        toDate.setHours(23, 59, 59, 999);
-        matchesDate = txDate >= fromDate && txDate <= toDate;
-      } else {
-        matchesDate = txDate >= fromDate;
-      }
+  // Helper to update URL with new filters and reset page to 1
+  const updateFilters = useCallback((newSearch: string, newRange?: DateRange) => {
+    const params = new URLSearchParams(searchParams.toString());
+    
+    // Always reset to page 1 on filter change
+    params.set("page", "1");
+    
+    if (newSearch) {
+      params.set("q", newSearch);
+    } else {
+      params.delete("q");
     }
+    
+    if (newRange?.from) {
+      params.set("from", format(newRange.from, "yyyy-MM-dd"));
+    } else {
+      params.delete("from");
+    }
+    
+    if (newRange?.to) {
+      params.set("to", format(newRange.to, "yyyy-MM-dd"));
+    } else {
+      params.delete("to");
+    }
+    
+    router.push(`/transactions?${params.toString()}`);
+  }, [searchParams, router]);
 
-    return matchesSearch && matchesDate;
-  });
+  // Debounced search logic
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    const timer = setTimeout(() => {
+      updateFilters(searchQuery, dateRange);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery, dateRange, updateFilters]);
+
+  // Handle date range change
+  const handleDateSelect = (range: DateRange | undefined) => {
+    setDateRange(range);
+    updateFilters(searchQuery, range);
+  };
 
   const handleDelete = async (id: string) => {
     const result = await Swal.fire({
@@ -208,8 +237,8 @@ export function TransactionDataTable({
    * Utility to export currently filtered transactions to a CSV file.
    * CSV format uses comma separation. Escapes double quotes if necessary.
    */
-  const handleExportCSV = () => {
-    if (filteredTransactions.length === 0) {
+   const handleExportCSV = () => {
+    if (initialTransactions.length === 0) {
       toast.error("Tidak ada data untuk diekspor!");
       return;
     }
@@ -218,7 +247,7 @@ export function TransactionDataTable({
     const headers = ["Tanggal", "Kategori", "Catatan", "Tipe", "Nominal", "Pencatat"];
     
     // Build CSV rows
-    const rows = filteredTransactions.map((tx) => {
+    const rows = initialTransactions.map((tx: Transaction) => {
       const date = format(new Date(tx.date), "dd/MM/yyyy");
       const category = `"${tx.category.name}"`;
       const description = tx.description ? `"${tx.description.replace(/"/g, '""')}"` : "-";
@@ -289,7 +318,7 @@ export function TransactionDataTable({
                 mode="range"
                 defaultMonth={dateRange?.from}
                 selected={dateRange}
-                onSelect={setDateRange}
+                onSelect={handleDateSelect}
                 numberOfMonths={2}
                 locale={id}
               />
@@ -350,14 +379,14 @@ export function TransactionDataTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredTransactions.length === 0 ? (
+              {initialTransactions.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
                     Tidak ada data transaksi yang sesuai.
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredTransactions.map((tx) => (
+                initialTransactions.map((tx: Transaction) => (
                   <TableRow key={tx.id} className="hover:bg-muted/30">
                     {/* Timestamp */}
                     <TableCell className="font-medium whitespace-nowrap">
@@ -468,7 +497,7 @@ export function TransactionDataTable({
             <ChevronLeft className="h-4 w-4" />
             Sebelumnya
           </Button>
-          <div className="bg-muted px-3 h-9 flex items-center justify-center rounded-md text-sm font-medium min-w-[3rem]">
+          <div className="bg-muted px-3 h-9 flex items-center justify-center rounded-md text-sm font-medium min-w-12">
             {currentPage} / {totalPages || 1}
           </div>
           <Button
