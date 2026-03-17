@@ -3,11 +3,12 @@
 import { useState, useTransition } from "react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import { Calendar as CalendarIcon, Download, Search, Trash2, FileImage, Pencil } from "lucide-react";
+import { Calendar as CalendarIcon, Download, Search, Trash2, FileImage, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import Link from "next/link";
 import Swal from "sweetalert2";
 import { toast } from "sonner";
+import { useSearchParams, useRouter } from "next/navigation";
 import { deleteTransaction, deleteAllTransactions, restoreTransactions } from "./actions";
 import { Undo2 } from "lucide-react";
 
@@ -45,6 +46,9 @@ interface Transaction {
 interface TransactionDataTableProps {
   transactions: Transaction[];
   userRole: string;
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
 }
 
 function formatRupiah(amount: number): string {
@@ -64,7 +68,14 @@ function formatDateDisplay(date: Date): string {
   });
 }
 
-export function TransactionDataTable({ transactions: initialTransactions, userRole }: TransactionDataTableProps) {
+export function TransactionDataTable({ 
+  transactions: initialTransactions, 
+  userRole,
+  currentPage,
+  totalPages,
+  totalItems
+}: TransactionDataTableProps) {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [isPending, startTransition] = useTransition();
@@ -436,6 +447,40 @@ export function TransactionDataTable({ transactions: initialTransactions, userRo
               )}
             </TableBody>
           </Table>
+        </div>
+      </div>
+      {/* Pagination Controls */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4 px-2">
+        <div className="text-sm text-muted-foreground order-2 sm:order-1">
+          Menampilkan <span className="font-medium text-foreground">{Math.min((currentPage - 1) * 10 + 1, totalItems)}</span> -{" "}
+          <span className="font-medium text-foreground">{Math.min(currentPage * 10, totalItems)}</span> dari{" "}
+          <span className="font-medium text-foreground">{totalItems}</span> transaksi
+        </div>
+        
+        <div className="flex items-center gap-2 order-1 sm:order-2 w-full sm:w-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push(`/transactions?page=${currentPage - 1}`)}
+            disabled={currentPage <= 1 || isPending}
+            className="gap-1 h-9 flex-1 sm:flex-initial"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Sebelumnya
+          </Button>
+          <div className="bg-muted px-3 h-9 flex items-center justify-center rounded-md text-sm font-medium min-w-[3rem]">
+            {currentPage} / {totalPages || 1}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push(`/transactions?page=${currentPage + 1}`)}
+            disabled={currentPage >= totalPages || isPending}
+            className="gap-1 h-9 flex-1 sm:flex-initial"
+          >
+            Berikutnya
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
       </div>
     </div>

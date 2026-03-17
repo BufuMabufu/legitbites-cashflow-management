@@ -22,12 +22,21 @@ import { TransactionDataTable } from "./transaction-data-table";
 import { Button } from "@/components/ui/button";
 
 
-export default async function TransactionsPage() {
+export default async function TransactionsPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
   const user = await getCurrentUser();
   if (!user) return null;
 
-  // RBAC: STAFF and OWNER can see all transactions
+  const params = await searchParams;
+  const currentPage = Number(params.page) || 1;
+  const pageSize = 10;
+
+  // RBAC: Logic is already handled by default since we don't filter by userId for now
+  // (In a real app, OWNER sees everything, STAFF sees only theirs - but here schema allows both)
   const whereClause = { deletedAt: null };
+
+  // Fetch total count for pagination metadata
+  const totalItems = await prisma.transaction.count({ where: whereClause });
+  const totalPages = Math.ceil(totalItems / pageSize);
 
   const transactions = await prisma.transaction.findMany({
     where: whereClause,
@@ -36,7 +45,8 @@ export default async function TransactionsPage() {
       user: { select: { name: true } },
     },
     orderBy: [{ date: "desc" }, { createdAt: "desc" }],
-    take: 100,
+    take: pageSize,
+    skip: (currentPage - 1) * pageSize,
   });
 
   return (
@@ -78,6 +88,9 @@ export default async function TransactionsPage() {
         <TransactionDataTable 
           transactions={transactions.map(tx => ({ ...tx, amount: Number(tx.amount) }))}
           userRole={user.role}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
         />
       )}
     </div>
