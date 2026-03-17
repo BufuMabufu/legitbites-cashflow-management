@@ -10,6 +10,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -91,6 +92,11 @@ interface AppSidebarProps {
 export function AppSidebar({ user }: AppSidebarProps) {
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Filter nav items based on user role
   const visibleItems = NAV_ITEMS.filter((item) => {
@@ -202,10 +208,14 @@ export function AppSidebar({ user }: AppSidebarProps) {
             variant="outline"
             className="w-full h-11 text-sm font-medium"
           >
-            {theme === "dark" ? (
-              <Sun className="w-4 h-4 mr-2" />
+            {mounted ? (
+              theme === "dark" ? (
+                <Sun className="w-4 h-4 mr-2" />
+              ) : (
+                <Moon className="w-4 h-4 mr-2" />
+              )
             ) : (
-              <Moon className="w-4 h-4 mr-2" />
+              <div className="w-4 h-4 mr-2" />
             )}
             Mode
           </Button>

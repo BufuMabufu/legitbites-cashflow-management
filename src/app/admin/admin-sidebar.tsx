@@ -9,6 +9,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import {
   Users,
@@ -52,6 +53,11 @@ interface AdminSidebarProps {
 export function AdminSidebar({ user }: AdminSidebarProps) {
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const initials = user.name
     .split(" ")
@@ -140,10 +146,14 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
             variant="outline"
             className="w-full h-11 text-sm font-medium"
           >
-            {theme === "dark" ? (
-              <Sun className="w-4 h-4 mr-2" />
+            {mounted ? (
+              theme === "dark" ? (
+                <Sun className="w-4 h-4 mr-2" />
+              ) : (
+                <Moon className="w-4 h-4 mr-2" />
+              )
             ) : (
-              <Moon className="w-4 h-4 mr-2" />
+              <div className="w-4 h-4 mr-2" />
             )}
             Mode
           </Button>

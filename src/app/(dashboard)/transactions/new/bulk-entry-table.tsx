@@ -217,10 +217,10 @@ export function BulkEntryTable({ type, categories }: BulkEntryTableProps) {
           <table className="w-full text-sm">
             <thead>
               <tr className={`${isIncome ? "bg-emerald-950/40" : "bg-rose-950/40"} border-b`}>
-                <th className="text-left px-3 py-3 font-semibold text-xs uppercase tracking-wider w-[18%] min-w-[140px]">
+                <th className="text-left px-3 py-3 font-semibold text-xs uppercase tracking-wider w-[15%] min-w-[130px]">
                   Jumlah (Rp)
                 </th>
-                <th className="text-left px-3 py-3 font-semibold text-xs uppercase tracking-wider w-[26%] min-w-[200px]">
+                <th className="text-left px-3 py-3 font-semibold text-xs uppercase tracking-wider w-[35%] min-w-[280px]">
                   Kategori
                 </th>
                 <th className="text-left px-3 py-3 font-semibold text-xs uppercase tracking-wider w-[15%] min-w-[140px]">
@@ -229,10 +229,10 @@ export function BulkEntryTable({ type, categories }: BulkEntryTableProps) {
                 <th className="text-left px-3 py-3 font-semibold text-xs uppercase tracking-wider w-[25%] min-w-[180px]">
                   Keterangan
                 </th>
-                <th className="text-center px-3 py-3 font-semibold text-xs uppercase tracking-wider w-[8%] min-w-[70px]">
+                <th className="text-center px-3 py-3 font-semibold text-xs uppercase tracking-wider w-[5%] min-w-[60px]">
                   Bukti
                 </th>
-                <th className="text-center px-3 py-3 font-semibold text-xs uppercase tracking-wider w-[8%] min-w-[50px]">
+                <th className="text-center px-3 py-3 font-semibold text-xs uppercase tracking-wider w-[5%] min-w-[50px]">
                   Batal
                 </th>
               </tr>
@@ -266,7 +266,7 @@ export function BulkEntryTable({ type, categories }: BulkEntryTableProps) {
                       value={row.categoryId}
                       onValueChange={(v) => updateRow(row.id, "categoryId", v ?? "")}
                     >
-                      <SelectTrigger className="h-10 border-0 bg-transparent focus:ring-1 rounded-lg text-sm truncate">
+                      <SelectTrigger className="w-full h-10 border-0 bg-transparent focus:ring-1 rounded-lg text-sm">
                         <SelectValue placeholder="Pilih kategori">
                           {row.categoryId
                             ? categories.find((c) => c.id === row.categoryId)?.name
