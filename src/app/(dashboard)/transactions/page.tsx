@@ -64,6 +64,9 @@ export default async function TransactionsPage({
   const totalItems = await prisma.transaction.count({ where: whereClause });
   const totalPages = Math.ceil(totalItems / pageSize);
 
+  // Fetch total count overall to check if database is truly empty
+  const totalItemsOverall = await prisma.transaction.count({ where: { deletedAt: null } });
+
   const transactions = await prisma.transaction.findMany({
     where: whereClause,
     include: {
@@ -95,7 +98,7 @@ export default async function TransactionsPage({
       </div>
 
       {/* Transaction List */}
-      {transactions.length === 0 ? (
+      {totalItemsOverall === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground text-lg mb-4">
