@@ -23,17 +23,17 @@ function formatRupiah(amount: number): string {
 }
 
 export function ExpenseDonutChart({ data, totalExpense }: ExpenseDonutChartProps) {
-  const [activeIndex, setActiveIndex] = React.useState<number | null>(null);
+  const [activeName, setActiveName] = React.useState<string | null>(null);
 
-  const onPieEnter = (_: unknown, index: number) => {
-    setActiveIndex(index);
+  const onPieEnter = (entry: any) => {
+    setActiveName(entry.name);
   };
 
   const onPieLeave = () => {
-    setActiveIndex(null);
+    setActiveName(null);
   };
 
-  const activeData = activeIndex !== null ? data[activeIndex] : null;
+  const activeData = activeName ? data.find(d => d.name === activeName) : null;
 
   return (
     <Card className="flex flex-col border-rose-100 bg-rose-50/30 dark:border-rose-900 dark:bg-rose-950/10">
@@ -71,7 +71,7 @@ export function ExpenseDonutChart({ data, totalExpense }: ExpenseDonutChartProps
                       key={`cell-${index}`} 
                       fill={entry.color} 
                       style={{
-                        filter: activeIndex === index ? "brightness(1.1)" : "none",
+                        filter: activeName === entry.name ? "brightness(1.1)" : "none",
                         transition: "filter 0.2s ease"
                       }}
                     />
@@ -84,11 +84,11 @@ export function ExpenseDonutChart({ data, totalExpense }: ExpenseDonutChartProps
                     const { payload } = props;
                     return (
                       <ul className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm mt-4">
-                        {payload?.map((entry, index) => (
+                        {payload?.map((entry: any, index: number) => (
                           <li 
                             key={`item-${index}`} 
                             className={`flex items-center font-medium transition-colors ${
-                              activeIndex === index || activeIndex === null ? "text-muted-foreground" : "text-muted-foreground/30"
+                              activeName === entry.value || activeName === null ? "text-muted-foreground" : "text-muted-foreground/30"
                             }`}
                           >
                             <span 
