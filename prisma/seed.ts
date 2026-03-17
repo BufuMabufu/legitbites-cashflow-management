@@ -73,6 +73,13 @@ const DEFAULT_USERS = [
     name: "Fardan",
     role: "STAFF" as const,
   },
+  {
+    email: "revan@legitbites.com",
+    password: "admin123",
+    name: "Revan Admin",
+    // @ts-expect-error adding ADMIN role which is present in DB
+    role: "ADMIN",
+  },
 ];
 
 async function main() {
@@ -95,10 +102,17 @@ async function main() {
       await supabaseAdmin.auth.admin.createUser({
         email: userData.email,
         password: userData.password,
-        email_confirm: true, // Skip email verification for seeded users
-      });
+          app_metadata: { role: userData.role } // Inject role into JWT
+        });
 
-    if (authError) {
+      // Also set the role explicitly via updateUser to bypass Supabase schema restrictions if any
+      if (authData.user?.id) {
+        await supabaseAdmin.auth.admin.updateUserById(authData.user.id, {
+          app_metadata: { role: userData.role }
+        });
+      }
+
+    if (authError || !authData.user?.id) {
       // If user already exists, fetch their ID instead
       if (authError.message.includes("already been registered")) {
         console.log(`  ⏭️  ${userData.name} (${userData.email}) — sudah ada di Auth`);
@@ -154,6 +168,7 @@ async function main() {
   console.log("   │ Hani      │ hani@legitbites.com      │ admin123  │ OWNER   │");
   console.log("   │ Caca      │ caca@legitbites.com      │ staf123   │ STAFF   │");
   console.log("   │ Fardan    │ fardan@legitbites.com    │ staf123   │ STAFF   │");
+  console.log("   │ Revan     │ revan@legitbites.com     │ admin123  │ ADMIN   │");
   console.log("   └───────────┴──────────────────────────┴───────────┴─────────┘");
 }
 
