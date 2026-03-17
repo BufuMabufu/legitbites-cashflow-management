@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -74,7 +75,9 @@ export function UserTableActions({ userId, currentRole }: UserTableActionsProps)
         }
       />
       <DropdownMenuContent align="end">
-        <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleResetPassword} disabled={isPending}>
           <KeyRound className="w-4 h-4 mr-2" />
