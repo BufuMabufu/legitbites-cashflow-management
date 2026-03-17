@@ -8,6 +8,7 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { AddCategoryDialog } from "./add-category-dialog";
 import { CategoryToggle } from "./category-toggle";
+import { CategoryTableActions } from "./category-table-actions";
 import {
   Table,
   TableBody,
@@ -69,7 +70,7 @@ export default async function CategoriesPage() {
                 <TableHead>Tipe</TableHead>
                 <TableHead>Transaksi</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Toggle</TableHead>
+                <TableHead className="text-right">Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -102,10 +103,13 @@ export default async function CategoriesPage() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <CategoryToggle
-                      categoryId={cat.id}
-                      isActive={cat.isActive}
-                    />
+                    <div className="flex items-center justify-end gap-2">
+                      <CategoryToggle
+                        categoryId={cat.id}
+                        isActive={cat.isActive}
+                      />
+                      <CategoryTableActions category={cat} />
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

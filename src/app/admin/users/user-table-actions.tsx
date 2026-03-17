@@ -7,8 +7,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { MoreHorizontal, KeyRound } from "lucide-react";
+import { MoreHorizontal, KeyRound, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { EditUserDialog } from "./edit-user-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,12 +23,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { resetUserPassword, changeUserRole } from "./actions";
+import { resetUserPassword, changeUserRole, deleteUser } from "./actions";
 import { Role } from "@prisma/client";
 
 interface UserTableActionsProps {
-  userId: string;
-  currentRole: Role;
+  user: {
+    id: string;
+    name: string | null;
+    email: string;
+    role: Role;
+  };
 }
 
 const ROLES: { value: Role; label: string }[] = [
@@ -36,14 +41,14 @@ const ROLES: { value: Role; label: string }[] = [
   { value: "ADMIN", label: "⚙️ Admin" },
 ];
 
-export function UserTableActions({ userId, currentRole }: UserTableActionsProps) {
+export function UserTableActions({ user }: UserTableActionsProps) {
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
 
   const handleResetPassword = () => {
     startTransition(async () => {
       try {
-        await resetUserPassword(userId);
+        await resetUserPassword(user.id);
         toast.success("Email reset password berhasil dikirim.");
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Gagal mengirim reset password.");
@@ -51,11 +56,23 @@ export function UserTableActions({ userId, currentRole }: UserTableActionsProps)
     });
   };
 
-  const handleChangeRole = (newRole: Role) => {
-    if (newRole === currentRole) return;
+  const handleDeleteUser = () => {
+    if (!confirm("Apakah Anda yakin ingin menghapus akun ini? Tindakan ini tidak dapat dibatalkan.")) return;
     startTransition(async () => {
       try {
-        await changeUserRole(userId, newRole);
+        await deleteUser(user.id);
+        toast.success("Akun berhasil dihapus.");
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Gagal menghapus akun.");
+      }
+    });
+  };
+
+  const handleChangeRole = (newRole: Role) => {
+    if (newRole === user.role) return;
+    startTransition(async () => {
+      try {
+        await changeUserRole(user.id, newRole);
         toast.success(`Role berhasil diubah ke ${newRole}.`);
         setOpen(false);
       } catch (err) {
@@ -79,6 +96,7 @@ export function UserTableActions({ userId, currentRole }: UserTableActionsProps)
           <DropdownMenuLabel>Aksi</DropdownMenuLabel>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
+        <EditUserDialog user={user} />
         <DropdownMenuItem onClick={handleResetPassword} disabled={isPending}>
           <KeyRound className="w-4 h-4 mr-2" />
           Reset Password
@@ -93,16 +111,25 @@ export function UserTableActions({ userId, currentRole }: UserTableActionsProps)
               <DropdownMenuItem
                 key={r.value}
                 onClick={() => handleChangeRole(r.value)}
-                disabled={r.value === currentRole || isPending}
+                disabled={r.value === user.role || isPending}
               >
                 {r.label}
-                {r.value === currentRole && (
+                {r.value === user.role && (
                   <span className="ml-auto text-xs text-muted-foreground">aktif</span>
                 )}
               </DropdownMenuItem>
             ))}
           </DropdownMenuSubContent>
         </DropdownMenuSub>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem 
+          onClick={handleDeleteUser} 
+          disabled={isPending}
+          variant="destructive"
+        >
+          <Trash2 className="w-4 h-4 mr-2" />
+          Hapus Akun
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

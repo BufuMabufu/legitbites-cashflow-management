@@ -80,3 +80,63 @@ export async function toggleCategoryStatus(categoryId: string, isActive: boolean
   revalidatePath("/admin/categories");
   revalidatePath("/");
 }
+
+// ---------------------------------------------------------------------------
+// Action: Update Category
+// ---------------------------------------------------------------------------
+export async function updateCategory(categoryId: string, formData: FormData) {
+  const admin = await assertAdmin();
+
+  const name = formData.get("name") as string;
+  const type = formData.get("type") as TransactionType;
+
+  if (!name?.trim() || !type) throw new Error("Nama dan tipe kategori wajib diisi.");
+
+  await prisma.category.update({
+    where: { id: categoryId },
+    data: { name: name.trim(), type },
+  });
+
+  await logAction(
+    admin.id,
+    "CATEGORY_UPDATED",
+    JSON.stringify({ categoryId, name, type })
+  );
+
+  revalidatePath("/admin/categories");
+  revalidatePath("/");
+}
+
+// ---------------------------------------------------------------------------
+// Action: Delete Category
+// ---------------------------------------------------------------------------
+export async function deleteCategory(categoryId: string) {
+  const admin = await assertAdmin();
+
+  const category = await prisma.category.findUnique({
+    where: { id: categoryId },
+    include: { _count: { select: { transactions: true } } },
+  });
+
+  if (!category) throw new Error("Kategori tidak ditemukan.");
+
+  // Security: Check if category has transactions
+  if (category._count.transactions > 0) {
+    throw new Error(
+      "Kategori ini memiliki transaksi dan tidak dapat dihapus. Silakan nonaktifkan saja."
+    );
+  }
+
+  await prisma.category.delete({
+    where: { id: categoryId },
+  });
+
+  await logAction(
+    admin.id,
+    "CATEGORY_DELETED",
+    JSON.stringify({ categoryId, name: category.name })
+  );
+
+  revalidatePath("/admin/categories");
+  revalidatePath("/");
+}

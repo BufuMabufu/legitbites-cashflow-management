@@ -88,7 +88,7 @@ export default async function UsersPage() {
                       })}
                     </TableCell>
                     <TableCell className="text-right">
-                      <UserTableActions userId={user.id} currentRole={user.role} />
+                      <UserTableActions user={user} />
                     </TableCell>
                   </TableRow>
                 );

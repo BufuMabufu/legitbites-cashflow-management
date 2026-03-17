@@ -153,3 +153,78 @@ export async function changeUserRole(userId: string, newRole: Role) {
 
   revalidatePath("/admin/users");
 }
+
+// ---------------------------------------------------------------------------
+// Action: Update User
+// ---------------------------------------------------------------------------
+export async function updateUser(userId: string, formData: FormData) {
+  const admin = await assertAdmin();
+  const supabaseAdmin = getSupabaseAdmin();
+
+  const email = formData.get("email") as string;
+  const name = formData.get("name") as string;
+  const role = formData.get("role") as Role;
+
+  if (!email || !name || !role) {
+    throw new Error("Email, Nama, dan Role wajib diisi.");
+  }
+
+  const dbUser = await prisma.user.findUnique({ where: { id: userId } });
+  if (!dbUser) throw new Error("User tidak ditemukan.");
+
+  // 1. Update Supabase Auth
+  const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
+    userId,
+    {
+      email,
+      app_metadata: { role },
+      user_metadata: { name },
+    }
+  );
+
+  if (authError) throw new Error(authError.message);
+
+  // 2. Update Prisma
+  await prisma.user.update({
+    where: { id: userId },
+    data: { email, name, role },
+  });
+
+  await logAction(
+    admin.id,
+    "USER_UPDATED",
+    JSON.stringify({ targetUserId: userId, email, role })
+  );
+
+  revalidatePath("/admin/users");
+}
+
+// ---------------------------------------------------------------------------
+// Action: Delete User
+// ---------------------------------------------------------------------------
+export async function deleteUser(userId: string) {
+  const admin = await assertAdmin();
+  const supabaseAdmin = getSupabaseAdmin();
+
+  if (admin.id === userId) {
+    throw new Error("Anda tidak dapat menghapus akun Anda sendiri.");
+  }
+
+  const dbUser = await prisma.user.findUnique({ where: { id: userId } });
+  if (!dbUser) throw new Error("User tidak ditemukan.");
+
+  // 1. Delete from Supabase Auth
+  const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+  if (authError) throw new Error(authError.message);
+
+  // 2. Delete from Prisma
+  await prisma.user.delete({ where: { id: userId } });
+
+  await logAction(
+    admin.id,
+    "USER_DELETED",
+    JSON.stringify({ targetUserId: userId, targetEmail: dbUser.email })
+  );
+
+  revalidatePath("/admin/users");
+}
