@@ -53,12 +53,14 @@ export function AddUserDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger>
-        <Button className="shrink-0" type="button">
-          <UserPlus className="w-4 h-4 mr-2" />
-          Tambah Akun
-        </Button>
-      </DialogTrigger>
+      <DialogTrigger
+        render={
+          <Button className="shrink-0" type="button">
+            <UserPlus className="w-4 h-4 mr-2" />
+            Tambah Akun
+          </Button>
+        }
+      />
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Tambah Akun Baru</DialogTitle>
