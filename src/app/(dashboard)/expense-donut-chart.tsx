@@ -25,8 +25,8 @@ function formatRupiah(amount: number): string {
 export function ExpenseDonutChart({ data, totalExpense }: ExpenseDonutChartProps) {
   const [activeName, setActiveName] = React.useState<string | null>(null);
 
-  const onPieEnter = (entry: any) => {
-    setActiveName(entry.name);
+  const onPieEnter = (entry: { name?: string }) => {
+    if (entry.name) setActiveName(entry.name);
   };
 
   const onPieLeave = () => {
@@ -84,11 +84,11 @@ export function ExpenseDonutChart({ data, totalExpense }: ExpenseDonutChartProps
                     const { payload } = props;
                     return (
                       <ul className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm mt-4">
-                        {payload?.map((entry: any, index: number) => (
+                        {payload?.map((entry, index) => (
                           <li 
                             key={`item-${index}`} 
                             className={`flex items-center font-medium transition-colors ${
-                              activeName === entry.value || activeName === null ? "text-muted-foreground" : "text-muted-foreground/30"
+                              activeName === String(entry.value) || activeName === null ? "text-muted-foreground" : "text-muted-foreground/30"
                             }`}
                           >
                             <span 
