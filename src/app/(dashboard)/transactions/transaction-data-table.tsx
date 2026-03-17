@@ -92,51 +92,49 @@ export function TransactionDataTable({
   const [isPending, startTransition] = useTransition();
   const [lastDeletedAt, setLastDeletedAt] = useState<string | null>(null);
 
-  // Helper to update URL with new filters and reset page to 1
-  const updateFilters = useCallback((newSearch: string, newRange?: DateRange) => {
+  // Handle page change while preserving filters
+  const handlePageChange = useCallback((page: number) => {
     const params = new URLSearchParams(searchParams.toString());
-    
-    // Always reset to page 1 on filter change
-    params.set("page", "1");
-    
-    if (newSearch) {
-      params.set("q", newSearch);
-    } else {
-      params.delete("q");
-    }
-    
-    if (newRange?.from) {
-      params.set("from", format(newRange.from, "yyyy-MM-dd"));
-    } else {
-      params.delete("from");
-    }
-    
-    if (newRange?.to) {
-      params.set("to", format(newRange.to, "yyyy-MM-dd"));
-    } else {
-      params.delete("to");
-    }
-    
+    params.set("page", page.toString());
     router.push(`/transactions?${params.toString()}`);
   }, [searchParams, router]);
 
-  // Debounced search logic
+  // Debounced filter sync logic
   const isFirstRender = useRef(true);
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
       return;
     }
+
     const timer = setTimeout(() => {
-      updateFilters(searchQuery, dateRange);
+      const currentQ = searchParams.get("q") || "";
+      const currentFrom = searchParams.get("from") || "";
+      const currentTo = searchParams.get("to") || "";
+      
+      const newFrom = dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : "";
+      const newTo = dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : "";
+
+      // Only update if filters actually changed (prevents loop when only page changes)
+      if (searchQuery !== currentQ || newFrom !== currentFrom || newTo !== currentTo) {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set("page", "1");
+        
+        if (searchQuery) params.set("q", searchQuery); else params.delete("q");
+        if (newFrom) params.set("from", newFrom); else params.delete("from");
+        if (newTo) params.set("to", newTo); else params.delete("to");
+        
+        router.push(`/transactions?${params.toString()}`);
+      }
     }, 500);
+
     return () => clearTimeout(timer);
-  }, [searchQuery, dateRange, updateFilters]);
+  }, [searchQuery, dateRange, searchParams, router]);
 
   // Handle date range change
   const handleDateSelect = (range: DateRange | undefined) => {
     setDateRange(range);
-    updateFilters(searchQuery, range);
+    // The useEffect will handle the URL update
   };
 
   const handleDelete = async (id: string) => {
@@ -490,7 +488,7 @@ export function TransactionDataTable({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => router.push(`/transactions?page=${currentPage - 1}`)}
+            onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage <= 1 || isPending}
             className="gap-1 h-9 flex-1 sm:flex-initial"
           >
@@ -503,7 +501,7 @@ export function TransactionDataTable({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => router.push(`/transactions?page=${currentPage + 1}`)}
+            onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage >= totalPages || isPending}
             className="gap-1 h-9 flex-1 sm:flex-initial"
           >
