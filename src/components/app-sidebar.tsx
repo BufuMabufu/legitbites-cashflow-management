@@ -21,6 +21,7 @@ import {
   Moon,
   Sun,
   ShieldCheck,
+  MessageCircle,
 } from "lucide-react";
 import {
   Sidebar,
@@ -66,6 +67,11 @@ const NAV_ITEMS: NavItem[] = [
     title: "Riwayat Transaksi",
     href: "/transactions",
     icon: ArrowRightLeft,
+  },
+  {
+    title: "AI Chat",
+    href: "/chat",
+    icon: MessageCircle,
   },
   {
     title: "Kategori",
